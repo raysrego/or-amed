@@ -219,9 +219,10 @@ export default function Budgets() {
         <body>
           <div class="header">
             <div class="logo">
-              <div class="logo-icon">📊</div>
-              <h1 style="margin: 0; color: #166534;">OrçaMed</h1>
+              <div class="logo-icon">✈️</div>
+              <h1 style="margin: 0; color: #166534;">CirPlane</h1>
             </div>
+            <p style="margin: 0; color: #666; font-size: 14px;">Planejamento de cirurgias</p>
             <h2>ORÇAMENTO CIRÚRGICO</h2>
             <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Calculator, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Plane, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -33,13 +33,13 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-green-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calculator className="h-8 w-8 text-white" />
+              <Plane className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
-              OrçaMed
+              CirPlane
             </h1>
             <p className="text-gray-600 mt-2">
-              Entre em sua conta para continuar
+              Planejamento de cirurgias
             </p>
           </div>
 
