@@ -147,7 +147,66 @@ export default function SurgeryRequests() {
             body { font-family: Arial, sans-serif; margin: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
             .logo { display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-            .logo-icon { width: 40px; height: 40px; background: #166534; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
+            .logo-icon { 
+              width: 48px; 
+              height: 48px; 
+              background: #166534; 
+              border-radius: 12px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              margin-right: 15px;
+              position: relative;
+            }
+            .logo-icon::before {
+              content: '';
+              position: absolute;
+              width: 28px;
+              height: 24px;
+              background: #166534;
+              border-radius: 3px;
+              top: 18px;
+              left: 10px;
+            }
+            .logo-icon::after {
+              content: '';
+              position: absolute;
+              width: 22px;
+              height: 5px;
+              background: #dcfce7;
+              border-radius: 1px;
+              top: 21px;
+              left: 13px;
+            }
+            .pulse-line {
+              position: absolute;
+              top: 8px;
+              left: 2px;
+              right: 2px;
+              height: 2px;
+              background: #22c55e;
+              border-radius: 1px;
+            }
+            .pulse-line::before {
+              content: '';
+              position: absolute;
+              width: 8px;
+              height: 8px;
+              background: #22c55e;
+              border-radius: 50%;
+              top: -3px;
+              left: 8px;
+            }
+            .pulse-line::after {
+              content: '';
+              position: absolute;
+              width: 6px;
+              height: 6px;
+              background: #22c55e;
+              border-radius: 50%;
+              top: -2px;
+              right: 12px;
+            }
             .section { margin-bottom: 20px; }
             .section h3 { border-bottom: 2px solid #166534; padding-bottom: 5px; color: #166534; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -163,9 +222,12 @@ export default function SurgeryRequests() {
         <body>
           <div class="header">
             <div class="logo">
-              <div class="logo-icon">📊</div>
-              <h1 style="margin: 0; color: #166534;">OrçaMed</h1>
+              <div class="logo-icon">
+                <div class="pulse-line"></div>
+              </div>
+              <h1 style="margin: 0; color: #166534;">CirPlane</h1>
             </div>
+            <p style="margin: 0; color: #666; font-size: 14px;">Planejamento de cirurgias</p>
             <h2>PEDIDO DE CIRURGIA</h2>
             <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
           </div>

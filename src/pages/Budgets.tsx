@@ -204,74 +204,61 @@ export default function Budgets() {
               width: 48px; 
               height: 48px; 
               background: #166534; 
-              border-radius: 8px; 
+              border-radius: 12px; 
               display: flex; 
               align-items: center; 
               justify-content: center; 
               margin-right: 15px;
               position: relative;
             }
+            .logo-icon::before {
+              content: '';
+              position: absolute;
+              width: 28px;
+              height: 24px;
+              background: #166534;
+              border-radius: 3px;
+              top: 18px;
+              left: 10px;
+            }
+            .logo-icon::after {
+              content: '';
+              position: absolute;
+              width: 22px;
+              height: 5px;
+              background: #dcfce7;
+              border-radius: 1px;
+              top: 21px;
+              left: 13px;
+            }
             .pulse-line {
               position: absolute;
-              width: 32px;
+              top: 8px;
+              left: 2px;
+              right: 2px;
               height: 2px;
-              background: #10b981;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
+              background: #22c55e;
+              border-radius: 1px;
             }
             .pulse-line::before {
               content: '';
               position: absolute;
-              left: 0;
-              top: -3px;
               width: 8px;
               height: 8px;
-              background: #10b981;
+              background: #22c55e;
               border-radius: 50%;
+              top: -3px;
+              left: 8px;
             }
             .pulse-line::after {
               content: '';
               position: absolute;
-              right: 0;
-              top: -3px;
-              width: 8px;
-              height: 8px;
-              background: #10b981;
+              width: 6px;
+              height: 6px;
+              background: #22c55e;
               border-radius: 50%;
-            }
-            .calculator-body {
-              position: absolute;
-              bottom: 2px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 20px;
-              height: 16px;
-              background: #166534;
-              border-radius: 2px;
-            }
-            .calculator-screen {
-              position: absolute;
-              top: 2px;
-              left: 2px;
-              width: 16px;
-              height: 4px;
-              background: #10b981;
-              border-radius: 1px;
-            }
-            .calculator-buttons {
-              position: absolute;
-              bottom: 2px;
-              left: 50%;
-              transform: translateX(-50%);
-              display: flex;
-              gap: 1px;
-            }
-            .calc-btn {
-              width: 2px;
-              height: 2px;
-              background: #10b981;
-              border-radius: 50%;
+              top: -2px;
+              right: 12px;
             }
             .section { margin-bottom: 20px; }
             .section h3 { border-bottom: 2px solid #166534; padding-bottom: 5px; color: #166534; }
@@ -293,14 +280,6 @@ export default function Budgets() {
             <div class="logo">
               <div class="logo-icon">
                 <div class="pulse-line"></div>
-                <div class="calculator-body">
-                  <div class="calculator-screen"></div>
-                  <div class="calculator-buttons">
-                    <div class="calc-btn"></div>
-                    <div class="calc-btn"></div>
-                    <div class="calc-btn"></div>
-                  </div>
-                </div>
               </div>
               <h1 style="margin: 0; color: #166534;">CirPlane</h1>
             </div>
