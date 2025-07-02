@@ -51,16 +51,23 @@ export default function OPMEs() {
     e.preventDefault();
     
     try {
+      // Prepare data with empty strings converted to null for optional fields
+      const submitData = {
+        name: formData.name,
+        brand: formData.brand || null,
+        supplier_id: formData.supplier_id || null,
+      };
+
       if (editingOpme) {
         const { error } = await supabase
           .from('opmes')
-          .update(formData)
+          .update(submitData)
           .eq('id', editingOpme.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('opmes')
-          .insert([formData]);
+          .insert([submitData]);
         if (error) throw error;
       }
 
@@ -77,8 +84,8 @@ export default function OPMEs() {
     setEditingOpme(opme);
     setFormData({
       name: opme.name,
-      brand: opme.brand,
-      supplier_id: opme.supplier_id,
+      brand: opme.brand || '',
+      supplier_id: opme.supplier_id || '',
     });
     setShowModal(true);
   };
@@ -109,8 +116,8 @@ export default function OPMEs() {
 
   const filteredOpmes = opmes.filter(opme =>
     opme.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    opme.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    opme.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (opme.brand && opme.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (opme.supplier?.name && opme.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading) {
@@ -160,7 +167,9 @@ export default function OPMEs() {
                 </div>
                 <div className="ml-3">
                   <h3 className="font-semibold text-gray-900">{opme.name}</h3>
-                  <p className="text-sm text-gray-600">Marca: {opme.brand}</p>
+                  {opme.brand && (
+                    <p className="text-sm text-gray-600">Marca: {opme.brand}</p>
+                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -231,16 +240,16 @@ export default function OPMEs() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Marca *
+                    Marca
                   </label>
                   <input
                     type="text"
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ex: Synthes, Stryker"
-                    required
+                    placeholder="Ex: Synthes, Stryker (opcional)"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Campo opcional</p>
                 </div>
 
                 <div>
@@ -252,13 +261,14 @@ export default function OPMEs() {
                     onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Selecione um fornecedor</option>
+                    <option value="">Selecione um fornecedor (opcional)</option>
                     {suppliers.map((supplier) => (
                       <option key={supplier.id} value={supplier.id}>
                         {supplier.name}
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">Campo opcional</p>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
