@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Plane, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import PulseCalculatorLogo from '../components/PulseCalculatorLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -32,8 +33,8 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-green-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plane className="h-8 w-8 text-white" />
+            <div className="flex justify-center mb-4">
+              <PulseCalculatorLogo size="lg" className="text-green-800" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
               CirPlane

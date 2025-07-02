@@ -12,10 +12,10 @@ import {
   History,
   LogOut,
   Activity,
-  Heart,
-  Plane
+  Heart
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import PulseCalculatorLogo from './PulseCalculatorLogo';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,9 +54,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6 border-b">
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-green-800 rounded-lg flex items-center justify-center mr-3">
-              <Plane className="h-6 w-6 text-white" />
-            </div>
+            <PulseCalculatorLogo size="md" className="text-green-800 mr-3" />
             <div>
               <h1 className="text-xl font-bold text-gray-800">
                 CirPlane
