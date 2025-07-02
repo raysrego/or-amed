@@ -86,6 +86,7 @@ export interface SurgeryRequest {
   doctor_fee: number;
   blood_reserve: boolean;
   blood_units?: number;
+  evoked_potential: boolean;
   created_at: string;
   patient?: Patient;
   doctor?: Doctor;

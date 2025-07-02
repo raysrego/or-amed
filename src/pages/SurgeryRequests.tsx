@@ -14,7 +14,8 @@ import {
   Building2,
   TestTube,
   Droplets,
-  Calendar
+  Calendar,
+  Zap
 } from 'lucide-react';
 import { supabase, SurgeryRequest, Patient, Doctor, Procedure, OPME, AnesthesiaType } from '../lib/supabase';
 
@@ -51,6 +52,7 @@ export default function SurgeryRequests() {
     doctor_fee: '',
     blood_reserve: false,
     blood_units: '',
+    evoked_potential: false,
   });
 
   useEffect(() => {
@@ -123,6 +125,7 @@ export default function SurgeryRequests() {
         doctor_fee: parseFloat(formData.doctor_fee),
         blood_reserve: formData.blood_reserve,
         blood_units: formData.blood_units ? parseInt(formData.blood_units) : null,
+        evoked_potential: formData.evoked_potential,
       };
 
       if (editingRequest) {
@@ -161,6 +164,7 @@ export default function SurgeryRequests() {
       doctor_fee: request.doctor_fee.toString(),
       blood_reserve: request.blood_reserve,
       blood_units: request.blood_units?.toString() || '',
+      evoked_potential: request.evoked_potential || false,
     });
     
     setSelectedProcedures(request.procedure_ids || []);
@@ -199,6 +203,7 @@ export default function SurgeryRequests() {
       doctor_fee: '',
       blood_reserve: false,
       blood_units: '',
+      evoked_potential: false,
     });
     setSelectedProcedures([]);
     setOpmeRequests([]);
@@ -355,6 +360,15 @@ export default function SurgeryRequests() {
                   <div className="flex items-center text-blue-800">
                     <Droplets className="h-4 w-4 mr-2" />
                     <span>Reserva de sangue: {request.blood_units} unidades</span>
+                  </div>
+                </div>
+              )}
+
+              {request.evoked_potential && (
+                <div className="bg-yellow-50 p-2 rounded border border-yellow-200">
+                  <div className="flex items-center text-yellow-800">
+                    <Zap className="h-4 w-4 mr-2" />
+                    <span>Potencial Evocado: Sim</span>
                   </div>
                 </div>
               )}
@@ -699,8 +713,8 @@ export default function SurgeryRequests() {
                   </div>
                 </div>
 
-                {/* Doctor Fee and Blood Reserve */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Doctor Fee, Blood Reserve, and Evoked Potential */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Honorário Médico (R$) *
@@ -741,6 +755,18 @@ export default function SurgeryRequests() {
                       />
                     </div>
                   )}
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.evoked_potential}
+                      onChange={(e) => setFormData({ ...formData, evoked_potential: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <label className="text-sm font-medium text-gray-700">
+                      Potencial Evocado
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

@@ -13,7 +13,9 @@ import {
   CheckCircle,
   XCircle,
   Package,
-  Truck
+  Truck,
+  Printer,
+  Zap
 } from 'lucide-react';
 import { supabase, Budget, SurgeryRequest, Hospital, OPME, Supplier } from '../lib/supabase';
 
@@ -170,6 +172,145 @@ export default function Budgets() {
     if (!selectedSurgeryRequest?.opme_requests) return null;
     const requests = Array.isArray(selectedSurgeryRequest.opme_requests) ? selectedSurgeryRequest.opme_requests : [];
     return requests.find((req: any) => req.opme_id === opmeId);
+  };
+
+  const calculateBudgetTotal = (budget: Budget) => {
+    const request = budget.surgery_request;
+    if (!request) return 0;
+
+    let total = 0;
+
+    // Add accommodation costs
+    total += (budget.icu_daily_cost || 0) * (request.icu_days || 0);
+    total += (budget.ward_daily_cost || 0) * (request.ward_days || 0);
+    total += (budget.room_daily_cost || 0) * (request.room_days || 0);
+
+    // Add fees
+    total += budget.anesthetist_fee || 0;
+    total += budget.doctor_fee || 0;
+
+    // Add OPME costs
+    if (budget.opme_quotes && Array.isArray(budget.opme_quotes)) {
+      budget.opme_quotes.forEach((quote: any) => {
+        const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
+        if (selectedQuote) {
+          total += selectedQuote.price || 0;
+        }
+      });
+    }
+
+    return total;
+  };
+
+  const printBudget = (budget: Budget) => {
+    const request = budget.surgery_request;
+    if (!request) return;
+
+    const total = calculateBudgetTotal(budget);
+    const opmeTotal = budget.opme_quotes && Array.isArray(budget.opme_quotes) 
+      ? budget.opme_quotes.reduce((sum: number, quote: any) => {
+          const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
+          return sum + (selectedQuote?.price || 0);
+        }, 0)
+      : 0;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Orçamento - ${request.patient?.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .item { margin-bottom: 10px; }
+            .label { font-weight: bold; }
+            .total { font-size: 18px; font-weight: bold; background: #f0f0f0; padding: 10px; text-align: center; }
+            .opme-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ORÇAMENTO CIRÚRGICO</h1>
+            <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+          </div>
+
+          <div class="section">
+            <h3>Dados do Paciente</h3>
+            <div class="item"><span class="label">Nome:</span> ${request.patient?.name}</div>
+          </div>
+
+          <div class="section">
+            <h3>Dados da Cirurgia</h3>
+            <div class="grid">
+              <div>
+                <div class="item"><span class="label">Médico:</span> ${request.doctor?.name}</div>
+                <div class="item"><span class="label">Hospital:</span> ${budget.hospital?.name}</div>
+                <div class="item"><span class="label">Duração:</span> ${request.procedure_duration}</div>
+              </div>
+              <div>
+                <div class="item"><span class="label">UTI:</span> ${request.needs_icu ? 'Sim' : 'Não'}</div>
+                <div class="item"><span class="label">Potencial Evocado:</span> ${request.evoked_potential ? 'Sim' : 'Não'}</div>
+                <div class="item"><span class="label">Reserva de Sangue:</span> ${request.blood_reserve ? `Sim (${request.blood_units} unidades)` : 'Não'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Custos de Internação</h3>
+            <div class="grid">
+              <div>
+                ${request.icu_days ? `<div class="item"><span class="label">UTI (${request.icu_days} diárias):</span> ${formatCurrency((budget.icu_daily_cost || 0) * request.icu_days)}</div>` : ''}
+                ${request.ward_days ? `<div class="item"><span class="label">Enfermaria (${request.ward_days} diárias):</span> ${formatCurrency((budget.ward_daily_cost || 0) * request.ward_days)}</div>` : ''}
+                ${request.room_days ? `<div class="item"><span class="label">Apartamento (${request.room_days} diárias):</span> ${formatCurrency((budget.room_daily_cost || 0) * request.room_days)}</div>` : ''}
+              </div>
+              <div>
+                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
+                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Honorário Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
+              </div>
+            </div>
+          </div>
+
+          ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
+            <div class="section">
+              <h3>Materiais OPME</h3>
+              ${budget.opme_quotes.map((quote: any) => {
+                const opme = getOPMEDetails(quote.opme_id);
+                const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
+                const supplier = suppliers.find(s => s.id === quote.selected_supplier_id);
+                return `
+                  <div class="opme-item">
+                    <div><span class="label">Material:</span> ${opme?.name} - ${opme?.brand}</div>
+                    <div><span class="label">Fornecedor:</span> ${supplier?.name}</div>
+                    <div><span class="label">Valor:</span> ${formatCurrency(selectedQuote?.price || 0)}</div>
+                  </div>
+                `;
+              }).join('')}
+              <div class="item"><span class="label">Total OPME:</span> ${formatCurrency(opmeTotal)}</div>
+            </div>
+          ` : ''}
+
+          <div class="total">
+            VALOR TOTAL: ${formatCurrency(total)}
+          </div>
+
+          <div class="section" style="margin-top: 40px;">
+            <p><span class="label">Status:</span> ${getStatusLabel(budget.status)}</p>
+            <p><span class="label">Data do Orçamento:</span> ${new Date(budget.created_at).toLocaleDateString('pt-BR')}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -397,6 +538,7 @@ export default function Budgets() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredBudgets.map((budget) => {
           const budgetCount = getBudgetCount(budget.surgery_request_id);
+          const calculatedTotal = calculateBudgetTotal(budget);
           
           return (
             <div key={budget.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -421,6 +563,13 @@ export default function Budgets() {
                   </div>
                 </div>
                 <div className="flex space-x-2">
+                  <button
+                    onClick={() => printBudget(budget)}
+                    className="text-green-600 hover:text-green-800"
+                    title="Imprimir Orçamento"
+                  >
+                    <Printer className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => handleEdit(budget)}
                     className="text-blue-600 hover:text-blue-800"
@@ -450,6 +599,14 @@ export default function Budgets() {
                   <span><strong>Hospital:</strong> {budget.hospital?.name}</span>
                 </div>
                 
+                {/* Surgery Request Details */}
+                {budget.surgery_request?.evoked_potential && (
+                  <div className="flex items-center text-yellow-600">
+                    <Zap className="h-4 w-4 mr-2" />
+                    <span><strong>Potencial Evocado:</strong> Sim</span>
+                  </div>
+                )}
+                
                 {/* OPME Summary */}
                 {budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 && (
                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
@@ -471,30 +628,32 @@ export default function Budgets() {
                   </div>
                 )}
                 
-                {budget.total_cost && (
-                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-green-800">Valor Total:</span>
-                      <span className="text-lg font-bold text-green-900">
-                        {formatCurrency(budget.total_cost)}
-                      </span>
-                    </div>
+                {/* Cost Breakdown */}
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                  <div className="text-xs text-gray-600 space-y-1">
+                    {budget.surgery_request?.icu_days && budget.icu_daily_cost && (
+                      <div>UTI ({budget.surgery_request.icu_days} diárias): {formatCurrency(budget.icu_daily_cost * budget.surgery_request.icu_days)}</div>
+                    )}
+                    {budget.surgery_request?.ward_days && budget.ward_daily_cost && (
+                      <div>Enfermaria ({budget.surgery_request.ward_days} diárias): {formatCurrency(budget.ward_daily_cost * budget.surgery_request.ward_days)}</div>
+                    )}
+                    {budget.surgery_request?.room_days && budget.room_daily_cost && (
+                      <div>Apartamento ({budget.surgery_request.room_days} diárias): {formatCurrency(budget.room_daily_cost * budget.surgery_request.room_days)}</div>
+                    )}
+                    {budget.anesthetist_fee && (
+                      <div>Anestesista: {formatCurrency(budget.anesthetist_fee)}</div>
+                    )}
+                    <div>Honorário Médico: {formatCurrency(budget.doctor_fee)}</div>
                   </div>
-                )}
+                </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                  {budget.icu_daily_cost && (
-                    <div>UTI/dia: {formatCurrency(budget.icu_daily_cost)}</div>
-                  )}
-                  {budget.ward_daily_cost && (
-                    <div>Enfermaria/dia: {formatCurrency(budget.ward_daily_cost)}</div>
-                  )}
-                  {budget.room_daily_cost && (
-                    <div>Quarto/dia: {formatCurrency(budget.room_daily_cost)}</div>
-                  )}
-                  {budget.anesthetist_fee && (
-                    <div>Anestesista: {formatCurrency(budget.anesthetist_fee)}</div>
-                  )}
+                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-green-800">Valor Total:</span>
+                    <span className="text-lg font-bold text-green-900">
+                      {formatCurrency(calculatedTotal)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -540,6 +699,7 @@ export default function Budgets() {
                             disabled={!editingBudget && budgetCount >= 3}
                           >
                             {request.patient?.name} - Dr. {request.doctor?.name} ({budgetCount}/3)
+                            {request.evoked_potential ? ' - Potencial Evocado' : ''}
                           </option>
                         );
                       })}
@@ -565,6 +725,27 @@ export default function Budgets() {
                     </select>
                   </div>
                 </div>
+
+                {/* Surgery Request Info */}
+                {selectedSurgeryRequest && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="text-lg font-medium text-blue-900 mb-2">Informações do Pedido</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p><strong>Paciente:</strong> {selectedSurgeryRequest.patient?.name}</p>
+                        <p><strong>Médico:</strong> {selectedSurgeryRequest.doctor?.name}</p>
+                        <p><strong>Duração:</strong> {selectedSurgeryRequest.procedure_duration}</p>
+                      </div>
+                      <div>
+                        <p><strong>UTI:</strong> {selectedSurgeryRequest.needs_icu ? `Sim (${selectedSurgeryRequest.icu_days} dias)` : 'Não'}</p>
+                        <p><strong>Enfermaria:</strong> {selectedSurgeryRequest.ward_days || 0} dias</p>
+                        <p><strong>Apartamento:</strong> {selectedSurgeryRequest.room_days || 0} dias</p>
+                        <p><strong>Potencial Evocado:</strong> {selectedSurgeryRequest.evoked_potential ? 'Sim' : 'Não'}</p>
+                        <p><strong>Reserva de Sangue:</strong> {selectedSurgeryRequest.blood_reserve ? `Sim (${selectedSurgeryRequest.blood_units} unidades)` : 'Não'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* OPME Materials Section */}
                 {selectedSurgeryRequest && opmeQuotes.length > 0 && (
