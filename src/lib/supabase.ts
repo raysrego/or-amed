@@ -104,6 +104,7 @@ export interface Budget {
   room_daily_cost?: number;
   anesthetist_fee?: number;
   doctor_fee: number;
+  evoked_potential_fee?: number;
   total_cost?: number;
   status: 'APPROVED' | 'AWAITING_QUOTE' | 'AWAITING_PATIENT' | 'AWAITING_PAYMENT' | 'CANCELED';
   created_at: string;

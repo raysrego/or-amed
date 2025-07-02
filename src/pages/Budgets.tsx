@@ -59,6 +59,7 @@ export default function Budgets() {
     room_daily_cost: '',
     anesthetist_fee: '',
     doctor_fee: '',
+    evoked_potential_fee: '',
     status: 'AWAITING_QUOTE' as const,
   });
 
@@ -122,58 +123,6 @@ export default function Budgets() {
     }
   };
 
-  const handleSurgeryRequestChange = (surgeryRequestId: string) => {
-    const request = surgeryRequests.find(r => r.id === surgeryRequestId);
-    setSelectedSurgeryRequest(request || null);
-    setFormData({ ...formData, surgery_request_id: surgeryRequestId, doctor_fee: request?.doctor_fee?.toString() || '' });
-
-    if (request && request.opme_requests) {
-      const opmeRequests = Array.isArray(request.opme_requests) ? request.opme_requests : [];
-      const initialQuotes: OPMEQuote[] = opmeRequests.map((req: any) => ({
-        opme_id: req.opme_id,
-        selected_supplier_id: '',
-        quotes: suppliers.map(supplier => ({
-          supplier_id: supplier.id,
-          price: 0,
-          supplier
-        }))
-      }));
-      setOpmeQuotes(initialQuotes);
-    } else {
-      setOpmeQuotes([]);
-    }
-  };
-
-  const updateOpmeQuote = (opmeId: string, supplierIndex: number, price: number) => {
-    setOpmeQuotes(prev => prev.map(quote => {
-      if (quote.opme_id === opmeId) {
-        const newQuotes = [...quote.quotes];
-        newQuotes[supplierIndex] = { ...newQuotes[supplierIndex], price };
-        return { ...quote, quotes: newQuotes };
-      }
-      return quote;
-    }));
-  };
-
-  const selectSupplier = (opmeId: string, supplierId: string) => {
-    setOpmeQuotes(prev => prev.map(quote => {
-      if (quote.opme_id === opmeId) {
-        return { ...quote, selected_supplier_id: supplierId };
-      }
-      return quote;
-    }));
-  };
-
-  const getOPMEDetails = (opmeId: string) => {
-    return opmes.find(opme => opme.id === opmeId);
-  };
-
-  const getOPMERequestDetails = (opmeId: string) => {
-    if (!selectedSurgeryRequest?.opme_requests) return null;
-    const requests = Array.isArray(selectedSurgeryRequest.opme_requests) ? selectedSurgeryRequest.opme_requests : [];
-    return requests.find((req: any) => req.opme_id === opmeId);
-  };
-
   const calculateBudgetTotal = (budget: Budget) => {
     const request = budget.surgery_request;
     if (!request) return 0;
@@ -188,6 +137,11 @@ export default function Budgets() {
     // Add fees
     total += budget.anesthetist_fee || 0;
     total += budget.doctor_fee || 0;
+
+    // Add evoked potential fee if applicable
+    if (request.evoked_potential) {
+      total += budget.evoked_potential_fee || 0;
+    }
 
     // Add OPME costs
     if (budget.opme_quotes && Array.isArray(budget.opme_quotes)) {
@@ -270,6 +224,7 @@ export default function Budgets() {
               <div>
                 <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
                 ${budget.anesthetist_fee ? `<div class="item"><span class="label">Honorário Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
+                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrency(budget.evoked_potential_fee)}</div>` : ''}
               </div>
             </div>
           </div>
@@ -313,6 +268,63 @@ export default function Budgets() {
     }
   };
 
+  const handleSurgeryRequestChange = (surgeryRequestId: string) => {
+    const request = surgeryRequests.find(r => r.id === surgeryRequestId);
+    setSelectedSurgeryRequest(request || null);
+    setFormData({ 
+      ...formData, 
+      surgery_request_id: surgeryRequestId, 
+      doctor_fee: request?.doctor_fee?.toString() || '',
+      evoked_potential_fee: '' // Reset evoked potential fee when changing request
+    });
+
+    if (request && request.opme_requests) {
+      const opmeRequests = Array.isArray(request.opme_requests) ? request.opme_requests : [];
+      const initialQuotes: OPMEQuote[] = opmeRequests.map((req: any) => ({
+        opme_id: req.opme_id,
+        selected_supplier_id: '',
+        quotes: suppliers.map(supplier => ({
+          supplier_id: supplier.id,
+          price: 0,
+          supplier
+        }))
+      }));
+      setOpmeQuotes(initialQuotes);
+    } else {
+      setOpmeQuotes([]);
+    }
+  };
+
+  const updateOpmeQuote = (opmeId: string, supplierIndex: number, price: number) => {
+    setOpmeQuotes(prev => prev.map(quote => {
+      if (quote.opme_id === opmeId) {
+        const newQuotes = [...quote.quotes];
+        newQuotes[supplierIndex] = { ...newQuotes[supplierIndex], price };
+        return { ...quote, quotes: newQuotes };
+      }
+      return quote;
+    }));
+  };
+
+  const selectSupplier = (opmeId: string, supplierId: string) => {
+    setOpmeQuotes(prev => prev.map(quote => {
+      if (quote.opme_id === opmeId) {
+        return { ...quote, selected_supplier_id: supplierId };
+      }
+      return quote;
+    }));
+  };
+
+  const getOPMEDetails = (opmeId: string) => {
+    return opmes.find(opme => opme.id === opmeId);
+  };
+
+  const getOPMERequestDetails = (opmeId: string) => {
+    if (!selectedSurgeryRequest?.opme_requests) return null;
+    const requests = Array.isArray(selectedSurgeryRequest.opme_requests) ? selectedSurgeryRequest.opme_requests : [];
+    return requests.find((req: any) => req.opme_id === opmeId);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -339,6 +351,7 @@ export default function Budgets() {
         room_daily_cost: formData.room_daily_cost ? parseFloat(formData.room_daily_cost) : null,
         anesthetist_fee: formData.anesthetist_fee ? parseFloat(formData.anesthetist_fee) : null,
         doctor_fee: parseFloat(formData.doctor_fee),
+        evoked_potential_fee: formData.evoked_potential_fee ? parseFloat(formData.evoked_potential_fee) : null,
         status: formData.status,
       };
 
@@ -374,6 +387,7 @@ export default function Budgets() {
       room_daily_cost: budget.room_daily_cost?.toString() || '',
       anesthetist_fee: budget.anesthetist_fee?.toString() || '',
       doctor_fee: budget.doctor_fee.toString(),
+      evoked_potential_fee: budget.evoked_potential_fee?.toString() || '',
       status: budget.status,
     });
 
@@ -419,6 +433,7 @@ export default function Budgets() {
       room_daily_cost: '',
       anesthetist_fee: '',
       doctor_fee: '',
+      evoked_potential_fee: '',
       status: 'AWAITING_QUOTE',
     });
     setSelectedSurgeryRequest(null);
@@ -644,6 +659,9 @@ export default function Budgets() {
                       <div>Anestesista: {formatCurrency(budget.anesthetist_fee)}</div>
                     )}
                     <div>Honorário Médico: {formatCurrency(budget.doctor_fee)}</div>
+                    {budget.surgery_request?.evoked_potential && budget.evoked_potential_fee && (
+                      <div>Potencial Evocado: {formatCurrency(budget.evoked_potential_fee)}</div>
+                    )}
                   </div>
                 </div>
 
@@ -859,7 +877,7 @@ export default function Budgets() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Honorário do Anestesista (R$)
@@ -888,6 +906,26 @@ export default function Budgets() {
                       required
                     />
                   </div>
+
+                  {/* Evoked Potential Fee - only show if surgery request has evoked potential */}
+                  {selectedSurgeryRequest?.evoked_potential && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="flex items-center">
+                          <Zap className="h-4 w-4 mr-1 text-yellow-600" />
+                          Taxa Potencial Evocado (R$)
+                        </div>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.evoked_potential_fee}
+                        onChange={(e) => setFormData({ ...formData, evoked_potential_fee: e.target.value })}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
