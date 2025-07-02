@@ -11,7 +11,8 @@ import {
   Calculator,
   History,
   LogOut,
-  Activity
+  Activity,
+  Heart
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,6 +38,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/patients', icon: Users, label: 'Pacientes' },
     { path: '/doctors', icon: UserCheck, label: 'Médicos' },
     { path: '/procedures', icon: Scissors, label: 'Procedimentos' },
+    { path: '/anesthesia-types', icon: Heart, label: 'Tipos de Anestesia' },
     { path: '/hospitals', icon: Building2, label: 'Hospitais' },
     { path: '/suppliers', icon: Truck, label: 'Fornecedores' },
     { path: '/opmes', icon: ShoppingCart, label: 'OPMEs' },

@@ -12,7 +12,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
   Package,
   Truck
 } from 'lucide-react';
@@ -25,14 +24,16 @@ interface OPMERequest {
   opme?: OPME;
 }
 
+interface SupplierQuote {
+  supplier_id: string;
+  price: number;
+  supplier?: Supplier;
+}
+
 interface OPMEQuote {
   opme_id: string;
-  quotes: {
-    supplier_id: string;
-    price: number;
-    selected: boolean;
-    supplier?: Supplier;
-  }[];
+  selected_supplier_id: string;
+  quotes: SupplierQuote[];
 }
 
 export default function Budgets() {
@@ -128,10 +129,10 @@ export default function Budgets() {
       const opmeRequests = Array.isArray(request.opme_requests) ? request.opme_requests : [];
       const initialQuotes: OPMEQuote[] = opmeRequests.map((req: any) => ({
         opme_id: req.opme_id,
-        quotes: suppliers.slice(0, 3).map(supplier => ({
+        selected_supplier_id: '',
+        quotes: suppliers.map(supplier => ({
           supplier_id: supplier.id,
           price: 0,
-          selected: false,
           supplier
         }))
       }));
@@ -141,19 +142,21 @@ export default function Budgets() {
     }
   };
 
-  const updateOpmeQuote = (opmeId: string, supplierIndex: number, field: 'price' | 'selected', value: number | boolean) => {
+  const updateOpmeQuote = (opmeId: string, supplierIndex: number, price: number) => {
     setOpmeQuotes(prev => prev.map(quote => {
       if (quote.opme_id === opmeId) {
         const newQuotes = [...quote.quotes];
-        if (field === 'selected' && value === true) {
-          // Unselect all others when selecting one
-          newQuotes.forEach((q, i) => {
-            q.selected = i === supplierIndex;
-          });
-        } else {
-          newQuotes[supplierIndex] = { ...newQuotes[supplierIndex], [field]: value };
-        }
+        newQuotes[supplierIndex] = { ...newQuotes[supplierIndex], price };
         return { ...quote, quotes: newQuotes };
+      }
+      return quote;
+    }));
+  };
+
+  const selectSupplier = (opmeId: string, supplierId: string) => {
+    setOpmeQuotes(prev => prev.map(quote => {
+      if (quote.opme_id === opmeId) {
+        return { ...quote, selected_supplier_id: supplierId };
       }
       return quote;
     }));
@@ -457,7 +460,7 @@ export default function Budgets() {
                     <div className="space-y-1">
                       {budget.opme_quotes.map((quote: any, index: number) => {
                         const opme = getOPMEDetails(quote.opme_id);
-                        const selectedQuote = quote.quotes?.find((q: any) => q.selected);
+                        const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
                         return (
                           <div key={index} className="text-xs text-blue-700">
                             {opme?.name} - {selectedQuote ? formatCurrency(selectedQuote.price) : 'Sem cotação'}
@@ -587,39 +590,42 @@ export default function Budgets() {
                               )}
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {opmeQuote.quotes.map((quote, quoteIndex) => (
-                                <div key={quoteIndex} className="border border-gray-200 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center">
-                                      <Truck className="h-4 w-4 text-gray-500 mr-2" />
-                                      <span className="text-sm font-medium">
-                                        {quote.supplier?.name || `Fornecedor ${quoteIndex + 1}`}
-                                      </span>
+                            <div className="space-y-3">
+                              <h5 className="text-sm font-medium text-gray-700">Cotações dos Fornecedores:</h5>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {opmeQuote.quotes.map((quote, quoteIndex) => (
+                                  <div key={quoteIndex} className="border border-gray-200 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center">
+                                        <Truck className="h-4 w-4 text-gray-500 mr-2" />
+                                        <span className="text-sm font-medium">
+                                          {quote.supplier?.name || `Fornecedor ${quoteIndex + 1}`}
+                                        </span>
+                                      </div>
+                                      <input
+                                        type="radio"
+                                        name={`selected-${opmeQuote.opme_id}`}
+                                        checked={opmeQuote.selected_supplier_id === quote.supplier_id}
+                                        onChange={() => selectSupplier(opmeQuote.opme_id, quote.supplier_id)}
+                                        className="text-blue-600"
+                                      />
                                     </div>
-                                    <input
-                                      type="radio"
-                                      name={`selected-${opmeQuote.opme_id}`}
-                                      checked={quote.selected}
-                                      onChange={(e) => updateOpmeQuote(opmeQuote.opme_id, quoteIndex, 'selected', e.target.checked)}
-                                      className="text-blue-600"
-                                    />
+                                    <div>
+                                      <label className="block text-xs text-gray-600 mb-1">
+                                        Preço (R$)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        value={quote.price}
+                                        onChange={(e) => updateOpmeQuote(opmeQuote.opme_id, quoteIndex, parseFloat(e.target.value) || 0)}
+                                        className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="0.00"
+                                      />
+                                    </div>
                                   </div>
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">
-                                      Preço (R$)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      step="0.01"
-                                      value={quote.price}
-                                      onChange={(e) => updateOpmeQuote(opmeQuote.opme_id, quoteIndex, 'price', parseFloat(e.target.value) || 0)}
-                                      className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                      placeholder="0.00"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
                           </div>
                         );

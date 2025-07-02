@@ -7,6 +7,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import Doctors from './pages/Doctors';
+import Procedures from './pages/Procedures';
+import AnesthesiaTypes from './pages/AnesthesiaTypes';
+import Hospitals from './pages/Hospitals';
+import Suppliers from './pages/Suppliers';
+import OPMEs from './pages/OPMEs';
+import SurgeryRequests from './pages/SurgeryRequests';
 import Budgets from './pages/Budgets';
 
 function App() {
@@ -24,12 +31,13 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/patients" element={<Patients />} />
-                    <Route path="/doctors" element={<div>Médicos em desenvolvimento</div>} />
-                    <Route path="/procedures" element={<div>Procedimentos em desenvolvimento</div>} />
-                    <Route path="/hospitals" element={<div>Hospitais em desenvolvimento</div>} />
-                    <Route path="/suppliers" element={<div>Fornecedores em desenvolvimento</div>} />
-                    <Route path="/opmes" element={<div>OPMEs em desenvolvimento</div>} />
-                    <Route path="/surgery-requests" element={<div>Pedidos de Cirurgia em desenvolvimento</div>} />
+                    <Route path="/doctors" element={<Doctors />} />
+                    <Route path="/procedures" element={<Procedures />} />
+                    <Route path="/anesthesia-types" element={<AnesthesiaTypes />} />
+                    <Route path="/hospitals" element={<Hospitals />} />
+                    <Route path="/suppliers" element={<Suppliers />} />
+                    <Route path="/opmes" element={<OPMEs />} />
+                    <Route path="/surgery-requests" element={<SurgeryRequests />} />
                     <Route path="/budgets" element={<Budgets />} />
                     <Route path="/audit-logs" element={<div>Logs de Auditoria em desenvolvimento</div>} />
                     <Route path="*" element={<Navigate to="/" replace />} />
