@@ -54,7 +54,7 @@ export default function OPMEs() {
       // Prepare data with empty strings converted to null for optional fields
       const submitData = {
         name: formData.name,
-        brand: formData.brand || null,
+        brand: formData.brand.trim() || null,
         supplier_id: formData.supplier_id || null,
       };
 
@@ -170,6 +170,9 @@ export default function OPMEs() {
                   {opme.brand && (
                     <p className="text-sm text-gray-600">Marca: {opme.brand}</p>
                   )}
+                  {!opme.brand && (
+                    <p className="text-sm text-gray-500 italic">Marca não informada</p>
+                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -193,10 +196,15 @@ export default function OPMEs() {
                 <Package className="h-4 w-4 mr-2" />
                 <span><strong>Material:</strong> {opme.name}</span>
               </div>
-              {opme.supplier && (
+              {opme.supplier ? (
                 <div className="flex items-center text-gray-600">
                   <Truck className="h-4 w-4 mr-2" />
                   <span><strong>Fornecedor:</strong> {opme.supplier.name}</span>
+                </div>
+              ) : (
+                <div className="flex items-center text-gray-500">
+                  <Truck className="h-4 w-4 mr-2" />
+                  <span className="italic">Fornecedor não informado</span>
                 </div>
               )}
               <div className="text-gray-600">
