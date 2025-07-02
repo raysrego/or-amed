@@ -127,6 +127,13 @@ export default function SurgeryRequests() {
     });
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   const printSurgeryRequest = (request: SurgeryRequest) => {
     const procedureNames = getProcedureNames(request.procedure_ids || []);
     const opmeDetails = getOPMENames(request.opme_requests || []);
@@ -139,8 +146,10 @@ export default function SurgeryRequests() {
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
+            .logo { display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+            .logo-icon { width: 40px; height: 40px; background: #166534; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
             .section { margin-bottom: 20px; }
-            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
+            .section h3 { border-bottom: 2px solid #166534; padding-bottom: 5px; color: #166534; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
             .item { margin-bottom: 10px; }
             .label { font-weight: bold; }
@@ -153,7 +162,11 @@ export default function SurgeryRequests() {
         </head>
         <body>
           <div class="header">
-            <h1>PEDIDO DE CIRURGIA</h1>
+            <div class="logo">
+              <div class="logo-icon">📊</div>
+              <h1 style="margin: 0; color: #166534;">OrçaMed</h1>
+            </div>
+            <h2>PEDIDO DE CIRURGIA</h2>
             <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
           </div>
 
@@ -377,13 +390,6 @@ export default function SurgeryRequests() {
     setExamsDuringStay(examsDuringStay.filter(e => e !== exam));
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
   const filteredRequests = surgeryRequests.filter(request =>
     request.patient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     request.doctor?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -392,7 +398,7 @@ export default function SurgeryRequests() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
@@ -406,7 +412,7 @@ export default function SurgeryRequests() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors"
         >
           <Plus className="h-5 w-5" />
           Novo Pedido
@@ -421,7 +427,7 @@ export default function SurgeryRequests() {
           placeholder="Buscar por paciente ou médico..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
         />
       </div>
 
@@ -431,8 +437,8 @@ export default function SurgeryRequests() {
           <div key={request.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-orange-600" />
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="ml-3">
                   <h3 className="font-semibold text-gray-900">
@@ -567,7 +573,7 @@ export default function SurgeryRequests() {
                     <select
                       value={formData.patient_id}
                       onChange={(e) => setFormData({ ...formData, patient_id: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
                       <option value="">Selecione um paciente</option>
@@ -586,7 +592,7 @@ export default function SurgeryRequests() {
                     <select
                       value={formData.doctor_id}
                       onChange={(e) => setFormData({ ...formData, doctor_id: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
                       <option value="">Selecione um médico</option>
@@ -599,30 +605,52 @@ export default function SurgeryRequests() {
                   </div>
                 </div>
 
-                {/* Procedures */}
+                {/* Procedures - Changed to dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Procedimentos a serem realizados *
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                  <select
+                    multiple
+                    value={selectedProcedures}
+                    onChange={(e) => {
+                      const values = Array.from(e.target.selectedOptions, option => option.value);
+                      setSelectedProcedures(values);
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[120px]"
+                    required
+                  >
                     {procedures.map((procedure) => (
-                      <label key={procedure.id} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedProcedures.includes(procedure.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedProcedures([...selectedProcedures, procedure.id]);
-                            } else {
-                              setSelectedProcedures(selectedProcedures.filter(id => id !== procedure.id));
-                            }
-                          }}
-                          className="mr-2"
-                        />
-                        <span className="text-sm">{procedure.name}</span>
-                      </label>
+                      <option key={procedure.id} value={procedure.id}>
+                        {procedure.name}
+                      </option>
                     ))}
-                  </div>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Segure Ctrl (Windows) ou Cmd (Mac) para selecionar múltiplos procedimentos
+                  </p>
+                  {selectedProcedures.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-700">Procedimentos selecionados:</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {selectedProcedures.map(id => {
+                          const procedure = procedures.find(p => p.id === id);
+                          return (
+                            <span key={id} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs flex items-center">
+                              {procedure?.name}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProcedures(selectedProcedures.filter(pid => pid !== id))}
+                                className="ml-1 text-green-600 hover:text-green-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* OPME Materials */}
@@ -634,7 +662,7 @@ export default function SurgeryRequests() {
                     <button
                       type="button"
                       onClick={addOpmeRequest}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      className="text-green-600 hover:text-green-800 text-sm"
                     >
                       + Adicionar Material
                     </button>
@@ -645,7 +673,7 @@ export default function SurgeryRequests() {
                         <select
                           value={request.opme_id}
                           onChange={(e) => updateOpmeRequest(index, 'opme_id', e.target.value)}
-                          className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         >
                           <option value="">Selecione um material</option>
                           {opmes.map((opme) => (
@@ -659,7 +687,7 @@ export default function SurgeryRequests() {
                           placeholder="Quantidade"
                           value={request.quantity}
                           onChange={(e) => updateOpmeRequest(index, 'quantity', parseInt(e.target.value) || 1)}
-                          className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           min="1"
                         />
                         <input
@@ -667,7 +695,7 @@ export default function SurgeryRequests() {
                           placeholder="Descrição/Observações"
                           value={request.description}
                           onChange={(e) => updateOpmeRequest(index, 'description', e.target.value)}
-                          className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         />
                         <button
                           type="button"
@@ -690,7 +718,7 @@ export default function SurgeryRequests() {
                     <select
                       value={formData.anesthesia_id}
                       onChange={(e) => setFormData({ ...formData, anesthesia_id: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
                       <option value="">Selecione o tipo</option>
@@ -710,7 +738,7 @@ export default function SurgeryRequests() {
                       type="text"
                       value={formData.procedure_duration}
                       onChange={(e) => setFormData({ ...formData, procedure_duration: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="Ex: 2 hours, 90 minutes"
                       required
                     />
@@ -740,7 +768,7 @@ export default function SurgeryRequests() {
                         type="number"
                         value={formData.icu_days}
                         onChange={(e) => setFormData({ ...formData, icu_days: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         min="0"
                       />
                     </div>
@@ -754,7 +782,7 @@ export default function SurgeryRequests() {
                       type="number"
                       value={formData.ward_days}
                       onChange={(e) => setFormData({ ...formData, ward_days: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       min="0"
                     />
                   </div>
@@ -767,7 +795,7 @@ export default function SurgeryRequests() {
                       type="number"
                       value={formData.room_days}
                       onChange={(e) => setFormData({ ...formData, room_days: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       min="0"
                     />
                   </div>
@@ -796,7 +824,7 @@ export default function SurgeryRequests() {
                     <input
                       type="text"
                       placeholder="Adicionar equipamento"
-                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -812,7 +840,7 @@ export default function SurgeryRequests() {
                         addEquipment(input.value);
                         input.value = '';
                       }}
-                      className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
                       Adicionar
                     </button>
@@ -842,7 +870,7 @@ export default function SurgeryRequests() {
                     <input
                       type="text"
                       placeholder="Adicionar exame"
-                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -858,7 +886,7 @@ export default function SurgeryRequests() {
                         addExam(input.value);
                         input.value = '';
                       }}
-                      className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
                       Adicionar
                     </button>
@@ -876,7 +904,7 @@ export default function SurgeryRequests() {
                       step="0.01"
                       value={formData.doctor_fee}
                       onChange={(e) => setFormData({ ...formData, doctor_fee: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -902,7 +930,7 @@ export default function SurgeryRequests() {
                         type="number"
                         value={formData.blood_units}
                         onChange={(e) => setFormData({ ...formData, blood_units: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         min="1"
                       />
                     </div>
@@ -935,7 +963,7 @@ export default function SurgeryRequests() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                   >
                     {editingRequest ? 'Atualizar' : 'Criar'}
                   </button>

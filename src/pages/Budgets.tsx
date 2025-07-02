@@ -15,7 +15,8 @@ import {
   Package,
   Truck,
   Printer,
-  Zap
+  Zap,
+  Scissors
 } from 'lucide-react';
 import { supabase, Budget, SurgeryRequest, Hospital, OPME, Supplier, Procedure } from '../lib/supabase';
 
@@ -193,8 +194,10 @@ export default function Budgets() {
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
+            .logo { display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+            .logo-icon { width: 40px; height: 40px; background: #166534; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
             .section { margin-bottom: 20px; }
-            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
+            .section h3 { border-bottom: 2px solid #166534; padding-bottom: 5px; color: #166534; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
             .item { margin-bottom: 10px; }
             .label { font-weight: bold; }
@@ -206,7 +209,11 @@ export default function Budgets() {
         </head>
         <body>
           <div class="header">
-            <h1>ORÇAMENTO CIRÚRGICO</h1>
+            <div class="logo">
+              <div class="logo-icon">📊</div>
+              <h1 style="margin: 0; color: #166534;">OrçaMed</h1>
+            </div>
+            <h2>ORÇAMENTO CIRÚRGICO</h2>
             <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
           </div>
 
@@ -529,7 +536,7 @@ export default function Budgets() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
@@ -543,7 +550,7 @@ export default function Budgets() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors"
         >
           <Plus className="h-5 w-5" />
           Novo Orçamento
@@ -559,13 +566,13 @@ export default function Budgets() {
             placeholder="Buscar por paciente, médico ou hospital..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
         >
           <option value="ALL">Todos os Status</option>
           <option value="AWAITING_QUOTE">Aguardando Cotação</option>
@@ -586,8 +593,8 @@ export default function Budgets() {
             <div key={budget.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Calculator className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <Calculator className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="ml-3">
                     <h3 className="font-semibold text-gray-900">
@@ -640,6 +647,19 @@ export default function Budgets() {
                   <Building2 className="h-4 w-4 mr-2" />
                   <span><strong>Hospital:</strong> {budget.hospital?.name}</span>
                 </div>
+                
+                {/* Procedures */}
+                {budget.surgery_request?.procedure_ids && budget.surgery_request.procedure_ids.length > 0 && (
+                  <div className="bg-purple-50 p-2 rounded border border-purple-200">
+                    <div className="flex items-center text-purple-800 mb-1">
+                      <Scissors className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Procedimentos:</span>
+                    </div>
+                    <div className="text-xs text-purple-700">
+                      {getProcedureNames(budget.surgery_request.procedure_ids).join(', ')}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Surgery Request Details */}
                 {budget.surgery_request?.evoked_potential && (
@@ -731,7 +751,7 @@ export default function Budgets() {
                     <select
                       value={formData.surgery_request_id}
                       onChange={(e) => handleSurgeryRequestChange(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
                       <option value="">Selecione um pedido</option>
@@ -758,7 +778,7 @@ export default function Budgets() {
                     <select
                       value={formData.hospital_id}
                       onChange={(e) => setFormData({ ...formData, hospital_id: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
                       <option value="">Selecione um hospital</option>
@@ -773,8 +793,8 @@ export default function Budgets() {
 
                 {/* Surgery Request Info */}
                 {selectedSurgeryRequest && (
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h3 className="text-lg font-medium text-blue-900 mb-2">Informações do Pedido</h3>
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 className="text-lg font-medium text-green-900 mb-2">Informações do Pedido</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <p><strong>Paciente:</strong> {selectedSurgeryRequest.patient?.name}</p>
@@ -843,7 +863,7 @@ export default function Budgets() {
                                         name={`selected-${opmeQuote.opme_id}`}
                                         checked={opmeQuote.selected_supplier_id === quote.supplier_id}
                                         onChange={() => selectSupplier(opmeQuote.opme_id, quote.supplier_id)}
-                                        className="text-blue-600"
+                                        className="text-green-600"
                                       />
                                     </div>
                                     <div>
@@ -855,7 +875,7 @@ export default function Budgets() {
                                         step="0.01"
                                         value={quote.price}
                                         onChange={(e) => updateOpmeQuote(opmeQuote.opme_id, quoteIndex, parseFloat(e.target.value) || 0)}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         placeholder="0.00"
                                       />
                                     </div>
@@ -880,7 +900,7 @@ export default function Budgets() {
                       step="0.01"
                       value={formData.icu_daily_cost}
                       onChange={(e) => setFormData({ ...formData, icu_daily_cost: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
@@ -894,7 +914,7 @@ export default function Budgets() {
                       step="0.01"
                       value={formData.ward_daily_cost}
                       onChange={(e) => setFormData({ ...formData, ward_daily_cost: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
@@ -908,7 +928,7 @@ export default function Budgets() {
                       step="0.01"
                       value={formData.room_daily_cost}
                       onChange={(e) => setFormData({ ...formData, room_daily_cost: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
@@ -924,7 +944,7 @@ export default function Budgets() {
                       step="0.01"
                       value={formData.anesthetist_fee}
                       onChange={(e) => setFormData({ ...formData, anesthetist_fee: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
@@ -938,7 +958,7 @@ export default function Budgets() {
                       step="0.01"
                       value={formData.doctor_fee}
                       onChange={(e) => setFormData({ ...formData, doctor_fee: e.target.value })}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="0.00"
                       required
                     />
@@ -958,7 +978,7 @@ export default function Budgets() {
                         step="0.01"
                         value={formData.evoked_potential_fee}
                         onChange={(e) => setFormData({ ...formData, evoked_potential_fee: e.target.value })}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         placeholder="0.00"
                       />
                     </div>
@@ -972,7 +992,7 @@ export default function Budgets() {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="AWAITING_QUOTE">Aguardando Cotação</option>
                     <option value="AWAITING_PATIENT">Aguardando Paciente</option>
@@ -996,7 +1016,7 @@ export default function Budgets() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                   >
                     {editingBudget ? 'Atualizar' : 'Criar'}
                   </button>

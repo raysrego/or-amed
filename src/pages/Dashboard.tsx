@@ -93,42 +93,42 @@ export default function Dashboard() {
       title: 'Pacientes',
       value: stats.patients,
       icon: Users,
-      color: 'bg-blue-500',
-      bgColor: 'bg-blue-50',
+      color: 'bg-green-600',
+      bgColor: 'bg-green-50',
     },
     {
       title: 'Médicos',
       value: stats.doctors,
       icon: UserCheck,
-      color: 'bg-green-500',
-      bgColor: 'bg-green-50',
+      color: 'bg-emerald-600',
+      bgColor: 'bg-emerald-50',
     },
     {
       title: 'Hospitais',
       value: stats.hospitals,
       icon: Building2,
-      color: 'bg-purple-500',
-      bgColor: 'bg-purple-50',
+      color: 'bg-teal-600',
+      bgColor: 'bg-teal-50',
     },
     {
       title: 'Pedidos de Cirurgia',
       value: stats.surgeryRequests,
       icon: FileText,
-      color: 'bg-orange-500',
-      bgColor: 'bg-orange-50',
+      color: 'bg-green-700',
+      bgColor: 'bg-green-50',
     },
     {
       title: 'Orçamentos',
       value: stats.budgets,
       icon: Calculator,
-      color: 'bg-teal-500',
-      bgColor: 'bg-teal-50',
+      color: 'bg-green-800',
+      bgColor: 'bg-green-50',
     },
     {
       title: 'Valor Total dos Orçamentos',
       value: formatCurrency(stats.totalBudgetValue),
       icon: DollarSign,
-      color: 'bg-emerald-500',
+      color: 'bg-emerald-700',
       bgColor: 'bg-emerald-50',
       isMonetary: true,
     },
@@ -139,14 +139,14 @@ export default function Dashboard() {
       title: 'Orçamentos Pendentes',
       value: stats.pendingBudgets,
       icon: Clock,
-      color: 'bg-amber-500',
+      color: 'bg-amber-600',
       bgColor: 'bg-amber-50',
     },
     {
       title: 'Orçamentos Aprovados',
       value: stats.approvedBudgets,
       icon: TrendingUp,
-      color: 'bg-green-500',
+      color: 'bg-green-600',
       bgColor: 'bg-green-50',
     },
   ];
@@ -154,7 +154,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
@@ -165,7 +165,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-2">
-            Visão geral do sistema de gestão cirúrgica
+            Visão geral do OrçaMed - Sistema de Orçamentos Cirúrgicos
           </p>
         </div>
       </div>
@@ -211,28 +211,28 @@ export default function Dashboard() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Ações Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button className="flex items-center p-4 text-left hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
-            <Users className="h-8 w-8 text-blue-500 mr-3" />
+            <Users className="h-8 w-8 text-green-600 mr-3" />
             <div>
               <p className="font-medium text-gray-900">Novo Paciente</p>
               <p className="text-sm text-gray-600">Cadastrar paciente</p>
             </div>
           </button>
           <button className="flex items-center p-4 text-left hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
-            <UserCheck className="h-8 w-8 text-green-500 mr-3" />
+            <UserCheck className="h-8 w-8 text-emerald-600 mr-3" />
             <div>
               <p className="font-medium text-gray-900">Novo Médico</p>
               <p className="text-sm text-gray-600">Cadastrar médico</p>
             </div>
           </button>
           <button className="flex items-center p-4 text-left hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
-            <FileText className="h-8 w-8 text-orange-500 mr-3" />
+            <FileText className="h-8 w-8 text-green-700 mr-3" />
             <div>
               <p className="font-medium text-gray-900">Pedido de Cirurgia</p>
               <p className="text-sm text-gray-600">Criar novo pedido</p>
             </div>
           </button>
           <button className="flex items-center p-4 text-left hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
-            <Calculator className="h-8 w-8 text-teal-500 mr-3" />
+            <Calculator className="h-8 w-8 text-green-800 mr-3" />
             <div>
               <p className="font-medium text-gray-900">Novo Orçamento</p>
               <p className="text-sm text-gray-600">Criar orçamento</p>
