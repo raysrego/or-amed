@@ -17,7 +17,7 @@ import {
   Printer,
   Zap
 } from 'lucide-react';
-import { supabase, Budget, SurgeryRequest, Hospital, OPME, Supplier } from '../lib/supabase';
+import { supabase, Budget, SurgeryRequest, Hospital, OPME, Supplier, Procedure } from '../lib/supabase';
 
 interface OPMERequest {
   opme_id: string;
@@ -44,6 +44,7 @@ export default function Budgets() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [opmes, setOpmes] = useState<OPME[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [procedures, setProcedures] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -69,7 +70,7 @@ export default function Budgets() {
 
   const fetchData = async () => {
     try {
-      const [budgetsResult, surgeryRequestsResult, hospitalsResult, opmesResult, suppliersResult] = await Promise.all([
+      const [budgetsResult, surgeryRequestsResult, hospitalsResult, opmesResult, suppliersResult, proceduresResult] = await Promise.all([
         supabase
           .from('budgets')
           .select(`
@@ -102,6 +103,10 @@ export default function Budgets() {
         supabase
           .from('suppliers')
           .select('*')
+          .order('name'),
+        supabase
+          .from('procedures')
+          .select('*')
           .order('name')
       ]);
 
@@ -110,12 +115,14 @@ export default function Budgets() {
       if (hospitalsResult.error) throw hospitalsResult.error;
       if (opmesResult.error) throw opmesResult.error;
       if (suppliersResult.error) throw suppliersResult.error;
+      if (proceduresResult.error) throw proceduresResult.error;
 
       setBudgets(budgetsResult.data || []);
       setSurgeryRequests(surgeryRequestsResult.data || []);
       setHospitals(hospitalsResult.data || []);
       setOpmes(opmesResult.data || []);
       setSuppliers(suppliersResult.data || []);
+      setProcedures(proceduresResult.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -156,6 +163,14 @@ export default function Budgets() {
     return total;
   };
 
+  const getProcedureNames = (procedureIds: string[]) => {
+    if (!procedureIds || !Array.isArray(procedureIds)) return [];
+    return procedureIds.map(id => {
+      const procedure = procedures.find(p => p.id === id);
+      return procedure?.name || 'Procedimento não encontrado';
+    });
+  };
+
   const printBudget = (budget: Budget) => {
     const request = budget.surgery_request;
     if (!request) return;
@@ -167,6 +182,8 @@ export default function Budgets() {
           return sum + (selectedQuote?.price || 0);
         }, 0)
       : 0;
+
+    const procedureNames = getProcedureNames(request.procedure_ids || []);
 
     const printContent = `
       <!DOCTYPE html>
@@ -183,6 +200,7 @@ export default function Budgets() {
             .label { font-weight: bold; }
             .total { font-size: 18px; font-weight: bold; background: #f0f0f0; padding: 10px; text-align: center; }
             .opme-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+            .procedure-list { list-style-type: disc; margin-left: 20px; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -212,6 +230,15 @@ export default function Budgets() {
               </div>
             </div>
           </div>
+
+          ${procedureNames.length > 0 ? `
+            <div class="section">
+              <h3>Procedimentos</h3>
+              <ul class="procedure-list">
+                ${procedureNames.map(name => `<li>${name}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
 
           <div class="section">
             <h3>Custos de Internação</h3>
@@ -753,6 +780,16 @@ export default function Budgets() {
                         <p><strong>Paciente:</strong> {selectedSurgeryRequest.patient?.name}</p>
                         <p><strong>Médico:</strong> {selectedSurgeryRequest.doctor?.name}</p>
                         <p><strong>Duração:</strong> {selectedSurgeryRequest.procedure_duration}</p>
+                        {selectedSurgeryRequest.procedure_ids && selectedSurgeryRequest.procedure_ids.length > 0 && (
+                          <div>
+                            <p><strong>Procedimentos:</strong></p>
+                            <ul className="list-disc list-inside ml-2 text-xs">
+                              {getProcedureNames(selectedSurgeryRequest.procedure_ids).map((name, index) => (
+                                <li key={index}>{name}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <p><strong>UTI:</strong> {selectedSurgeryRequest.needs_icu ? `Sim (${selectedSurgeryRequest.icu_days} dias)` : 'Não'}</p>

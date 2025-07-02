@@ -15,7 +15,8 @@ import {
   TestTube,
   Droplets,
   Calendar,
-  Zap
+  Zap,
+  Printer
 } from 'lucide-react';
 import { supabase, SurgeryRequest, Patient, Doctor, Procedure, OPME, AnesthesiaType } from '../lib/supabase';
 
@@ -102,6 +103,137 @@ export default function SurgeryRequests() {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getProcedureNames = (procedureIds: string[]) => {
+    if (!procedureIds || !Array.isArray(procedureIds)) return [];
+    return procedureIds.map(id => {
+      const procedure = procedures.find(p => p.id === id);
+      return procedure?.name || 'Procedimento não encontrado';
+    });
+  };
+
+  const getOPMENames = (opmeRequests: any[]) => {
+    if (!opmeRequests || !Array.isArray(opmeRequests)) return [];
+    return opmeRequests.map(req => {
+      const opme = opmes.find(o => o.id === req.opme_id);
+      return {
+        name: opme?.name || 'Material não encontrado',
+        brand: opme?.brand || '',
+        quantity: req.quantity || 1,
+        description: req.description || ''
+      };
+    });
+  };
+
+  const printSurgeryRequest = (request: SurgeryRequest) => {
+    const procedureNames = getProcedureNames(request.procedure_ids || []);
+    const opmeDetails = getOPMENames(request.opme_requests || []);
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Pedido de Cirurgia - ${request.patient?.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .section h3 { border-bottom: 2px solid #333; padding-bottom: 5px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .item { margin-bottom: 10px; }
+            .label { font-weight: bold; }
+            .procedure-list { list-style-type: disc; margin-left: 20px; }
+            .opme-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+            .equipment-list { display: flex; flex-wrap: wrap; gap: 5px; }
+            .equipment-tag { background: #e3f2fd; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>PEDIDO DE CIRURGIA</h1>
+            <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+          </div>
+
+          <div class="section">
+            <h3>Dados do Paciente</h3>
+            <div class="item"><span class="label">Nome:</span> ${request.patient?.name}</div>
+          </div>
+
+          <div class="section">
+            <h3>Dados da Cirurgia</h3>
+            <div class="grid">
+              <div>
+                <div class="item"><span class="label">Médico Solicitante:</span> ${request.doctor?.name}</div>
+                <div class="item"><span class="label">Tipo de Anestesia:</span> ${request.anesthesia_type?.type}</div>
+                <div class="item"><span class="label">Duração do Procedimento:</span> ${request.procedure_duration}</div>
+                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(request.doctor_fee)}</div>
+              </div>
+              <div>
+                <div class="item"><span class="label">Necessita UTI:</span> ${request.needs_icu ? `Sim (${request.icu_days} dias)` : 'Não'}</div>
+                <div class="item"><span class="label">Enfermaria:</span> ${request.ward_days || 0} dias</div>
+                <div class="item"><span class="label">Apartamento:</span> ${request.room_days || 0} dias</div>
+                <div class="item"><span class="label">Potencial Evocado:</span> ${request.evoked_potential ? 'Sim' : 'Não'}</div>
+                <div class="item"><span class="label">Reserva de Sangue:</span> ${request.blood_reserve ? `Sim (${request.blood_units} unidades)` : 'Não'}</div>
+              </div>
+            </div>
+          </div>
+
+          ${procedureNames.length > 0 ? `
+            <div class="section">
+              <h3>Procedimentos a serem realizados</h3>
+              <ul class="procedure-list">
+                ${procedureNames.map(name => `<li>${name}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+
+          ${opmeDetails.length > 0 ? `
+            <div class="section">
+              <h3>Materiais OPME Solicitados</h3>
+              ${opmeDetails.map(opme => `
+                <div class="opme-item">
+                  <div><span class="label">Material:</span> ${opme.name} - ${opme.brand}</div>
+                  <div><span class="label">Quantidade:</span> ${opme.quantity}</div>
+                  ${opme.description ? `<div><span class="label">Descrição:</span> ${opme.description}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          ${request.hospital_equipment && request.hospital_equipment.length > 0 ? `
+            <div class="section">
+              <h3>Equipamentos Hospitalares Necessários</h3>
+              <div class="equipment-list">
+                ${request.hospital_equipment.map(equipment => `<span class="equipment-tag">${equipment}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${request.exams_during_stay && request.exams_during_stay.length > 0 ? `
+            <div class="section">
+              <h3>Exames Durante a Internação</h3>
+              <div class="equipment-list">
+                ${request.exams_during_stay.map(exam => `<span class="equipment-tag">${exam}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="section" style="margin-top: 40px;">
+            <p><span class="label">Data do Pedido:</span> ${new Date(request.created_at).toLocaleDateString('pt-BR')}</p>
+            <p><span class="label">ID do Pedido:</span> ${request.id}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
     }
   };
 
@@ -313,6 +445,13 @@ export default function SurgeryRequests() {
               </div>
               <div className="flex space-x-2">
                 <button
+                  onClick={() => printSurgeryRequest(request)}
+                  className="text-green-600 hover:text-green-800"
+                  title="Imprimir Pedido"
+                >
+                  <Printer className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => handleEdit(request)}
                   className="text-blue-600 hover:text-blue-800"
                 >
@@ -348,6 +487,19 @@ export default function SurgeryRequests() {
                 <Calendar className="h-4 w-4 mr-2" />
                 <span><strong>Honorário:</strong> {formatCurrency(request.doctor_fee)}</span>
               </div>
+              
+              {/* Procedures */}
+              {request.procedure_ids && request.procedure_ids.length > 0 && (
+                <div className="bg-purple-50 p-2 rounded border border-purple-200">
+                  <div className="flex items-center text-purple-800 mb-1">
+                    <Scissors className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Procedimentos:</span>
+                  </div>
+                  <div className="text-xs text-purple-700">
+                    {getProcedureNames(request.procedure_ids).join(', ')}
+                  </div>
+                </div>
+              )}
               
               {request.needs_icu && (
                 <div className="bg-red-50 p-2 rounded border border-red-200">
