@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import Budgets from './pages/Budgets';
 
 function App() {
   return (
@@ -29,7 +30,7 @@ function App() {
                     <Route path="/suppliers" element={<div>Fornecedores em desenvolvimento</div>} />
                     <Route path="/opmes" element={<div>OPMEs em desenvolvimento</div>} />
                     <Route path="/surgery-requests" element={<div>Pedidos de Cirurgia em desenvolvimento</div>} />
-                    <Route path="/budgets" element={<div>Orçamentos em desenvolvimento</div>} />
+                    <Route path="/budgets" element={<Budgets />} />
                     <Route path="/audit-logs" element={<div>Logs de Auditoria em desenvolvimento</div>} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
