@@ -51,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
+      <div className="w-64 bg-white shadow-lg flex flex-col min-h-screen">
         <div className="p-6 border-b">
           <div className="flex items-center">
             <PulseCalculatorLogo size="md" className="text-green-800 mr-3" />
@@ -66,7 +66,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
         
-        <nav className="mt-6">
+        <nav className="mt-6 flex-1">
           <div className="px-4 space-y-1">
             {navItems.map((item) => (
               <NavLink
@@ -74,7 +74,7 @@ export default function Layout({ children }: LayoutProps) {
                 to={item.path}
                 end={item.exact}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  `flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-green-50 text-green-700 border-r-2 border-green-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -89,7 +89,7 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* User info and logout */}
-        <div className="absolute bottom-0 w-64 p-4 border-t bg-white">
+        <div className="p-4 border-t bg-white mt-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
