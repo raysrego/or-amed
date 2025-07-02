@@ -16,7 +16,8 @@ import {
   Truck,
   Printer,
   Zap,
-  Scissors
+  Scissors,
+  MessageSquare
 } from 'lucide-react';
 import { supabase, Budget, SurgeryRequest, Hospital, OPME, Supplier, Procedure } from '../lib/supabase';
 
@@ -62,6 +63,7 @@ export default function Budgets() {
     anesthetist_fee: '',
     doctor_fee: '',
     evoked_potential_fee: '',
+    observations: '',
     status: 'AWAITING_QUOTE' as const,
   });
 
@@ -133,22 +135,22 @@ export default function Budgets() {
 
   const calculateBudgetTotal = (budget: Budget) => {
     const request = budget.surgery_request;
-    if (!request) return 0;
+    if (!request) return { subtotal: 0, serviceFee: 0, total: 0 };
 
-    let total = 0;
+    let subtotal = 0;
 
     // Add accommodation costs
-    total += (budget.icu_daily_cost || 0) * (request.icu_days || 0);
-    total += (budget.ward_daily_cost || 0) * (request.ward_days || 0);
-    total += (budget.room_daily_cost || 0) * (request.room_days || 0);
+    subtotal += (budget.icu_daily_cost || 0) * (request.icu_days || 0);
+    subtotal += (budget.ward_daily_cost || 0) * (request.ward_days || 0);
+    subtotal += (budget.room_daily_cost || 0) * (request.room_days || 0);
 
     // Add fees
-    total += budget.anesthetist_fee || 0;
-    total += budget.doctor_fee || 0;
+    subtotal += budget.anesthetist_fee || 0;
+    subtotal += budget.doctor_fee || 0;
 
     // Add evoked potential fee if applicable
     if (request.evoked_potential) {
-      total += budget.evoked_potential_fee || 0;
+      subtotal += budget.evoked_potential_fee || 0;
     }
 
     // Add OPME costs
@@ -156,12 +158,15 @@ export default function Budgets() {
       budget.opme_quotes.forEach((quote: any) => {
         const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
         if (selectedQuote) {
-          total += selectedQuote.price || 0;
+          subtotal += selectedQuote.price || 0;
         }
       });
     }
 
-    return total;
+    const serviceFee = subtotal * 0.05; // 5% service fee
+    const total = subtotal + serviceFee;
+
+    return { subtotal, serviceFee, total };
   };
 
   const getProcedureNames = (procedureIds: string[]) => {
@@ -176,7 +181,7 @@ export default function Budgets() {
     const request = budget.surgery_request;
     if (!request) return;
 
-    const total = calculateBudgetTotal(budget);
+    const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
     const opmeTotal = budget.opme_quotes && Array.isArray(budget.opme_quotes) 
       ? budget.opme_quotes.reduce((sum: number, quote: any) => {
           const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
@@ -201,9 +206,13 @@ export default function Budgets() {
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
             .item { margin-bottom: 10px; }
             .label { font-weight: bold; }
-            .total { font-size: 18px; font-weight: bold; background: #f0f0f0; padding: 10px; text-align: center; }
+            .total-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; }
+            .subtotal { font-size: 16px; margin-bottom: 8px; }
+            .service-fee { font-size: 16px; margin-bottom: 8px; color: #166534; }
+            .total { font-size: 20px; font-weight: bold; border-top: 2px solid #166534; padding-top: 10px; }
             .opme-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
             .procedure-list { list-style-type: disc; margin-left: 20px; }
+            .observations { background: #f0f8ff; padding: 10px; border-left: 4px solid #166534; margin-top: 15px; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -282,9 +291,18 @@ export default function Budgets() {
             </div>
           ` : ''}
 
-          <div class="total">
-            VALOR TOTAL: ${formatCurrency(total)}
+          <div class="total-section">
+            <div class="subtotal"><span class="label">Subtotal:</span> ${formatCurrency(subtotal)}</div>
+            <div class="service-fee"><span class="label">Taxa de Serviço (5%):</span> ${formatCurrency(serviceFee)}</div>
+            <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrency(total)}</div>
           </div>
+
+          ${budget.observations ? `
+            <div class="observations">
+              <h4 style="margin-top: 0; color: #166534;">Observações:</h4>
+              <p style="margin-bottom: 0;">${budget.observations}</p>
+            </div>
+          ` : ''}
 
           <div class="section" style="margin-top: 40px;">
             <p><span class="label">Status:</span> ${getStatusLabel(budget.status)}</p>
@@ -386,6 +404,7 @@ export default function Budgets() {
         anesthetist_fee: formData.anesthetist_fee ? parseFloat(formData.anesthetist_fee) : null,
         doctor_fee: parseFloat(formData.doctor_fee),
         evoked_potential_fee: formData.evoked_potential_fee ? parseFloat(formData.evoked_potential_fee) : null,
+        observations: formData.observations || null,
         status: formData.status,
       };
 
@@ -422,6 +441,7 @@ export default function Budgets() {
       anesthetist_fee: budget.anesthetist_fee?.toString() || '',
       doctor_fee: budget.doctor_fee.toString(),
       evoked_potential_fee: budget.evoked_potential_fee?.toString() || '',
+      observations: (budget as any).observations || '',
       status: budget.status,
     });
 
@@ -468,6 +488,7 @@ export default function Budgets() {
       anesthetist_fee: '',
       doctor_fee: '',
       evoked_potential_fee: '',
+      observations: '',
       status: 'AWAITING_QUOTE',
     });
     setSelectedSurgeryRequest(null);
@@ -587,7 +608,7 @@ export default function Budgets() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredBudgets.map((budget) => {
           const budgetCount = getBudgetCount(budget.surgery_request_id);
-          const calculatedTotal = calculateBudgetTotal(budget);
+          const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
           
           return (
             <div key={budget.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -690,6 +711,19 @@ export default function Budgets() {
                   </div>
                 )}
                 
+                {/* Observations */}
+                {(budget as any).observations && (
+                  <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                    <div className="flex items-center text-blue-800 mb-1">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Observações:</span>
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      {(budget as any).observations}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Cost Breakdown */}
                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                   <div className="text-xs text-gray-600 space-y-1">
@@ -713,11 +747,19 @@ export default function Budgets() {
                 </div>
 
                 <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-green-800">Valor Total:</span>
-                    <span className="text-lg font-bold text-green-900">
-                      {formatCurrency(calculatedTotal)}
-                    </span>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-green-700">Subtotal:</span>
+                      <span className="text-green-900">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-green-700">Taxa de Serviço (5%):</span>
+                      <span className="text-green-900">{formatCurrency(serviceFee)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-green-200 pt-1">
+                      <span className="font-medium text-green-800">Valor Total:</span>
+                      <span className="text-lg font-bold text-green-900">{formatCurrency(total)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -970,7 +1012,7 @@ export default function Budgets() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         <div className="flex items-center">
                           <Zap className="h-4 w-4 mr-1 text-yellow-600" />
-                          Taxa Potencial Evocado (R$)
+                          Potencial Evocado (R$)
                         </div>
                       </label>
                       <input
@@ -983,6 +1025,23 @@ export default function Budgets() {
                       />
                     </div>
                   )}
+                </div>
+
+                {/* Observations Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="flex items-center">
+                      <MessageSquare className="h-4 w-4 mr-1 text-blue-600" />
+                      Observações
+                    </div>
+                  </label>
+                  <textarea
+                    value={formData.observations}
+                    onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Observações adicionais sobre o orçamento..."
+                  />
                 </div>
 
                 <div>
