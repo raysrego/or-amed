@@ -3,6 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('Supabase Config:', {
+  url: supabaseUrl ? 'Present' : 'Missing',
+  key: supabaseAnonKey ? 'Present' : 'Missing'
+});
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase URL:', supabaseUrl);
   console.error('Supabase Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
@@ -17,7 +22,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce',
     storage: window.localStorage,
     storageKey: 'cirplane-auth-token',
-    debug: false
+    debug: true
   },
   global: {
     headers: {
