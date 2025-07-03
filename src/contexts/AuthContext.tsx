@@ -17,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error('Error getting session:', error);
+          setError(`Erro de autenticação: ${error.message}`);
           // Clear any corrupted session data
           await supabase.auth.signOut();
         }
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error in getSession:', error);
+        setError(`Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         if (mounted) {
           setSession(null);
           setUser(null);
@@ -61,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setError(null); // Clear errors on successful auth change
       }
 
       // Handle specific auth events
@@ -81,6 +85,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Show error state if there's a critical error
+  if (error && !loading) {
+    return (
+      <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Erro de Configuração</h2>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-sm text-gray-600">
+            Verifique se as variáveis de ambiente do Supabase estão configuradas corretamente.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
