@@ -22,7 +22,18 @@ export default function Login() {
       await signIn(email, password);
       navigate('/');
     } catch (error: any) {
-      setError(error.message || 'Erro ao fazer login');
+      console.error('Login error:', error);
+      
+      // Handle different types of errors
+      if (error.message?.includes('Invalid login credentials')) {
+        setError('Email ou senha incorretos');
+      } else if (error.message?.includes('Email not confirmed')) {
+        setError('Por favor, confirme seu email antes de fazer login');
+      } else if (error.message?.includes('Too many requests')) {
+        setError('Muitas tentativas de login. Tente novamente em alguns minutos');
+      } else {
+        setError(error.message || 'Erro ao fazer login. Tente novamente');
+      }
     } finally {
       setLoading(false);
     }

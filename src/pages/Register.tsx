@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, Phone, Stethoscope, UserCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PulseCalculatorLogo from '../components/PulseCalculatorLogo';
-
-interface Doctor {
-  id: string;
-  name: string;
-  crm: string;
-  specialty: string;
-}
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -21,8 +14,6 @@ export default function Register() {
   const [role, setRole] = useState<'doctor' | 'secretary'>('secretary');
   const [crm, setCrm] = useState('');
   const [specialty, setSpecialty] = useState('');
-  const [doctorId, setDoctorId] = useState('');
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,25 +21,6 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchDoctors();
-  }, []);
-
-  const fetchDoctors = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, name, crm, specialty')
-        .eq('role', 'doctor')
-        .order('name');
-
-      if (error) throw error;
-      setDoctors(data || []);
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +62,7 @@ export default function Register() {
           role: role,
           crm: role === 'doctor' ? crm : null,
           specialty: role === 'doctor' ? specialty : null,
-          doctor_id: role === 'secretary' ? (doctorId || null) : null,
+          doctor_id: null, // Removido o campo médico responsável
           is_admin: false,
         };
 
@@ -347,30 +319,6 @@ export default function Register() {
                     required
                   />
                 </div>
-              </div>
-            )}
-
-            {/* Secretary-specific fields */}
-            {role === 'secretary' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Médico Responsável
-                </label>
-                <select
-                  value={doctorId}
-                  onChange={(e) => setDoctorId(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                >
-                  <option value="">Selecione um médico (opcional)</option>
-                  {doctors.map((doctor) => (
-                    <option key={doctor.id} value={doctor.id}>
-                      Dr. {doctor.name} - {doctor.specialty} (CRM: {doctor.crm})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Vincule-se a um médico para gerenciar seus pedidos
-                </p>
               </div>
             )}
 
