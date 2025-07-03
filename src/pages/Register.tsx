@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, User, Phone, Stethoscope, UserCheck } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Mail, Lock, Eye, EyeOff, User, Stethoscope, UserCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import PulseCalculatorLogo from '../components/PulseCalculatorLogo';
 
@@ -44,15 +43,28 @@ export default function Register() {
     }
 
     try {
+      console.log('Creating user account for:', email);
+      
       // Create user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
+        options: {
+          emailRedirectTo: undefined // Disable email confirmation
+        }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
 
       if (authData.user) {
+        console.log('User created, creating profile...');
+        
+        // Wait a moment for the user to be fully created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         // Create user profile
         const profileData = {
           user_id: authData.user.id,
@@ -68,9 +80,14 @@ export default function Register() {
           .from('user_profiles')
           .insert([profileData]);
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          throw profileError;
+        }
 
+        console.log('Profile created successfully');
         setSuccess(true);
+        
         setTimeout(() => {
           navigate('/login');
         }, 2000);
@@ -85,6 +102,8 @@ export default function Register() {
         setError('Email inválido. Verifique o formato do email.');
       } else if (error.message?.includes('Password should be at least 6 characters')) {
         setError('A senha deve ter pelo menos 6 caracteres');
+      } else if (error.message?.includes('Auth session missing')) {
+        setError('Erro de sessão. Tente novamente em alguns segundos');
       } else {
         setError(error.message || 'Erro ao criar conta. Tente novamente.');
       }
@@ -168,6 +187,7 @@ export default function Register() {
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                     placeholder="seu@email.com"
                     required
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -188,6 +208,7 @@ export default function Register() {
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                     placeholder="Mínimo 6 caracteres"
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -212,6 +233,7 @@ export default function Register() {
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                     placeholder="Confirme sua senha"
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"

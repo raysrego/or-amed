@@ -19,8 +19,10 @@ export default function Login() {
     setError('');
 
     try {
+      console.log('Attempting to sign in with:', email);
       await signIn(email, password);
-      navigate('/');
+      console.log('Sign in successful, navigating to dashboard');
+      navigate('/', { replace: true });
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -31,6 +33,8 @@ export default function Login() {
         setError('Por favor, confirme seu email antes de fazer login');
       } else if (error.message?.includes('Too many requests')) {
         setError('Muitas tentativas de login. Tente novamente em alguns minutos');
+      } else if (error.message?.includes('Auth session missing')) {
+        setError('Erro de sessão. Tente novamente em alguns segundos');
       } else {
         setError(error.message || 'Erro ao fazer login. Tente novamente');
       }
@@ -75,6 +79,7 @@ export default function Login() {
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   placeholder="seu@email.com"
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -92,6 +97,7 @@ export default function Login() {
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
                   placeholder="Sua senha"
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
