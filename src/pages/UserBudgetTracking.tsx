@@ -28,14 +28,19 @@ export default function UserBudgetTracking() {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (result.error && result.error.code !== 'PGRST116') {
+        throw result.error;
+      }
+
+      if (result.data) {
+        setProfile(result.data);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -47,7 +52,7 @@ export default function UserBudgetTracking() {
     if (!profile) return;
 
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_budget_tracking')
         .select(`
           *,
@@ -65,8 +70,11 @@ export default function UserBudgetTracking() {
         .eq('surgery_request.user_profile_id', profile.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setTrackings(data || []);
+      if (result.error) {
+        throw result.error;
+      }
+
+      setTrackings(result.data || []);
     } catch (error) {
       console.error('Error fetching trackings:', error);
     }
@@ -240,7 +248,7 @@ export default function UserBudgetTracking() {
 
   const handleUserResponse = async (trackingId: string, approval: 'approved' | 'revision_requested' | 'rejected') => {
     try {
-      const { error } = await supabase
+      const result = await supabase
         .from('user_budget_tracking')
         .update({
           user_approval: approval,
@@ -250,7 +258,7 @@ export default function UserBudgetTracking() {
         })
         .eq('id', trackingId);
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       setShowBudgetModal(false);
       setSelectedTracking(null);

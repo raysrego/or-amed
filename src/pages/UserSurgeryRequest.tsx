@@ -37,14 +37,19 @@ export default function UserSurgeryRequest() {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (result.error && result.error.code !== 'PGRST116') {
+        throw result.error;
+      }
+
+      if (result.data) {
+        setProfile(result.data);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -56,14 +61,17 @@ export default function UserSurgeryRequest() {
     if (!profile) return;
 
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_surgery_requests')
         .select('*')
         .eq('user_profile_id', profile.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setRequests(data || []);
+      if (result.error) {
+        throw result.error;
+      }
+
+      setRequests(result.data || []);
     } catch (error) {
       console.error('Error fetching requests:', error);
     }
@@ -229,16 +237,18 @@ export default function UserSurgeryRequest() {
       };
 
       if (editingRequest) {
-        const { error } = await supabase
+        const result = await supabase
           .from('user_surgery_requests')
           .update(requestData)
           .eq('id', editingRequest.id);
-        if (error) throw error;
+        
+        if (result.error) throw result.error;
       } else {
-        const { error } = await supabase
+        const result = await supabase
           .from('user_surgery_requests')
           .insert([requestData]);
-        if (error) throw error;
+        
+        if (result.error) throw result.error;
       }
 
       setShowModal(false);
@@ -269,12 +279,12 @@ export default function UserSurgeryRequest() {
     if (!confirm('Tem certeza que deseja excluir este pedido?')) return;
 
     try {
-      const { error } = await supabase
+      const result = await supabase
         .from('user_surgery_requests')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       fetchRequests();
     } catch (error: any) {
       alert('Erro ao excluir pedido: ' + error.message);

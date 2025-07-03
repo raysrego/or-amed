@@ -39,14 +39,19 @@ export default function UserManagement() {
 
   const fetchCurrentUserProfile = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
-      if (error) throw error;
-      setCurrentUserProfile(data);
+      if (result.error && result.error.code !== 'PGRST116') {
+        throw result.error;
+      }
+
+      if (result.data) {
+        setCurrentUserProfile(result.data);
+      }
     } catch (error) {
       console.error('Error fetching current user profile:', error);
     } finally {
@@ -56,7 +61,7 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select(`
           *,
@@ -65,8 +70,11 @@ export default function UserManagement() {
         .neq('role', 'admin')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (result.error) {
+        throw result.error;
+      }
+
+      setUsers(result.data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -74,14 +82,17 @@ export default function UserManagement() {
 
   const fetchDoctors = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select('*')
         .eq('role', 'doctor')
         .order('name');
 
-      if (error) throw error;
-      setDoctors(data || []);
+      if (result.error) {
+        throw result.error;
+      }
+
+      setDoctors(result.data || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
     }
@@ -101,25 +112,25 @@ export default function UserManagement() {
           doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
         };
 
-        const { error } = await supabase
+        const result = await supabase
           .from('user_profiles')
           .update(profileData)
           .eq('id', editingUser.id);
         
-        if (error) throw error;
+        if (result.error) throw result.error;
       } else {
         // Create new user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const authResult = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
         });
 
-        if (authError) throw authError;
+        if (authResult.error) throw authResult.error;
 
-        if (authData.user) {
+        if (authResult.data.user) {
           // Create user profile
           const profileData = {
-            user_id: authData.user.id,
+            user_id: authResult.data.user.id,
             name: formData.name,
             role: formData.role,
             crm: formData.role === 'doctor' ? formData.crm : null,
@@ -128,11 +139,11 @@ export default function UserManagement() {
             is_admin: false,
           };
 
-          const { error: profileError } = await supabase
+          const profileResult = await supabase
             .from('user_profiles')
             .insert([profileData]);
 
-          if (profileError) throw profileError;
+          if (profileResult.error) throw profileResult.error;
         }
       }
 
@@ -164,12 +175,12 @@ export default function UserManagement() {
     if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
 
     try {
-      const { error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       fetchUsers();
       alert('Usuário excluído com sucesso!');
     } catch (error: any) {

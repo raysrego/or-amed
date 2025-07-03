@@ -27,7 +27,7 @@ export default function UserProfile() {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select(`
           *,
@@ -36,16 +36,18 @@ export default function UserProfile() {
         .eq('user_id', user?.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (result.error && result.error.code !== 'PGRST116') {
+        throw result.error;
+      }
       
-      if (data) {
-        setProfile(data);
+      if (result.data) {
+        setProfile(result.data);
         setFormData({
-          name: data.name,
-          role: data.role,
-          crm: data.crm || '',
-          specialty: data.specialty || '',
-          doctor_id: data.doctor_id || '',
+          name: result.data.name,
+          role: result.data.role,
+          crm: result.data.crm || '',
+          specialty: result.data.specialty || '',
+          doctor_id: result.data.doctor_id || '',
         });
       }
     } catch (error) {
@@ -57,14 +59,17 @@ export default function UserProfile() {
 
   const fetchDoctors = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await supabase
         .from('user_profiles')
         .select('*')
         .eq('role', 'doctor')
         .order('name');
 
-      if (error) throw error;
-      setDoctors(data || []);
+      if (result.error) {
+        throw result.error;
+      }
+
+      setDoctors(result.data || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
     }
@@ -85,16 +90,18 @@ export default function UserProfile() {
       };
 
       if (profile) {
-        const { error } = await supabase
+        const result = await supabase
           .from('user_profiles')
           .update(profileData)
           .eq('id', profile.id);
-        if (error) throw error;
+        
+        if (result.error) throw result.error;
       } else {
-        const { error } = await supabase
+        const result = await supabase
           .from('user_profiles')
           .insert([profileData]);
-        if (error) throw error;
+        
+        if (result.error) throw result.error;
       }
 
       await fetchProfile();
