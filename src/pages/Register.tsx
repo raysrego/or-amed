@@ -10,7 +10,6 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
   const [role, setRole] = useState<'doctor' | 'secretary'>('secretary');
   const [crm, setCrm] = useState('');
   const [specialty, setSpecialty] = useState('');
@@ -19,7 +18,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,22 +45,22 @@ export default function Register() {
 
     try {
       // Create user account
-      await signUp(email, password);
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
 
-      // Get the user after signup
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) throw userError;
+      if (authError) throw authError;
 
-      if (user) {
+      if (authData.user) {
         // Create user profile
         const profileData = {
-          user_id: user.id,
+          user_id: authData.user.id,
           name: name,
           role: role,
           crm: role === 'doctor' ? crm : null,
           specialty: role === 'doctor' ? specialty : null,
-          doctor_id: null, // Removido o campo médico responsável
+          doctor_id: null,
           is_admin: false,
         };
 
@@ -74,11 +72,22 @@ export default function Register() {
 
         setSuccess(true);
         setTimeout(() => {
-          navigate('/');
+          navigate('/login');
         }, 2000);
       }
     } catch (error: any) {
-      setError(error.message || 'Erro ao criar conta');
+      console.error('Registration error:', error);
+      
+      // Handle different types of errors
+      if (error.message?.includes('User already registered')) {
+        setError('Este email já está cadastrado. Tente fazer login.');
+      } else if (error.message?.includes('Invalid email')) {
+        setError('Email inválido. Verifique o formato do email.');
+      } else if (error.message?.includes('Password should be at least 6 characters')) {
+        setError('A senha deve ter pelo menos 6 caracteres');
+      } else {
+        setError(error.message || 'Erro ao criar conta. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -96,7 +105,7 @@ export default function Register() {
               Conta Criada!
             </h1>
             <p className="text-gray-600">
-              Sua conta foi criada com sucesso. Redirecionando...
+              Sua conta foi criada com sucesso. Redirecionando para o login...
             </p>
           </div>
         </div>
@@ -148,36 +157,19 @@ export default function Register() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contato *
+                  Email *
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
-                    type="text"
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                    placeholder="(11) 99999-9999"
+                    placeholder="seu@email.com"
                     required
                   />
                 </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                  placeholder="seu@email.com"
-                  required
-                />
               </div>
             </div>
 
