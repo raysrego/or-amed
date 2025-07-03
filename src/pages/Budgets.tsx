@@ -163,7 +163,7 @@ export default function Budgets() {
       });
     }
 
-    const serviceFee = subtotal * 0.05; // 5% service fee
+    const serviceFee = subtotal * 0.02; // 2% service fee
     const total = subtotal + serviceFee;
 
     return { subtotal, serviceFee, total };
