@@ -3,11 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('Supabase Config:', {
-  url: supabaseUrl ? 'Present' : 'Missing',
-  key: supabaseAnonKey ? 'Present' : 'Missing'
-});
-
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase URL:', supabaseUrl);
   console.error('Supabase Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
@@ -19,14 +14,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce',
     storage: window.localStorage,
     storageKey: 'cirplane-auth-token',
-    debug: true
+    debug: false
   },
   global: {
     headers: {
-      'X-Client-Info': 'cirplane-web'
+      'X-Client-Info': 'cirplane-web',
+      'apikey': supabaseAnonKey
     }
   },
   db: {
@@ -39,6 +34,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Test connection on initialization
+supabase.from('user_profiles').select('count', { count: 'exact', head: true })
+  .then(({ error }) => {
+    if (error) {
+      console.error('Database connection test failed:', error);
+    } else {
+      console.log('Database connection successful');
+    }
+  });
 // Database types
 export interface Patient {
   id: string;

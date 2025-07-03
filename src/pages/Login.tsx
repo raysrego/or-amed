@@ -19,12 +19,9 @@ export default function Login() {
     setError('');
 
     try {
-      console.log('Attempting to sign in with:', email);
       await signIn(email, password);
-      console.log('Sign in successful, navigating to dashboard');
       navigate('/', { replace: true });
     } catch (error: any) {
-      console.error('Login error:', error);
       
       // Handle different types of errors
       if (error.message?.includes('Invalid login credentials')) {
@@ -33,8 +30,8 @@ export default function Login() {
         setError('Por favor, confirme seu email antes de fazer login');
       } else if (error.message?.includes('Too many requests')) {
         setError('Muitas tentativas de login. Tente novamente em alguns minutos');
-      } else if (error.message?.includes('Auth session missing')) {
-        setError('Erro de sessão. Tente novamente em alguns segundos');
+      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        setError('Erro de conexão. Verifique sua internet e tente novamente');
       } else {
         setError(error.message || 'Erro ao fazer login. Tente novamente');
       }

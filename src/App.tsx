@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,10 +21,6 @@ import UserBudgetTracking from './pages/UserBudgetTracking';
 import UserManagement from './pages/UserManagement';
 
 function App() {
-  useEffect(() => {
-    console.log('App component mounted');
-  }, []);
-
   return (
     <AuthProvider>
       <Router>

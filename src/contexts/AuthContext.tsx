@@ -17,7 +17,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -30,9 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error('Error getting session:', error);
-          setError(`Erro de autenticação: ${error.message}`);
-          // Clear any corrupted session data
-          await supabase.auth.signOut();
+          // Don't throw error on initial load, just log it
+          console.warn('Session error (will retry):', error.message);
         }
         
         if (mounted) {
@@ -43,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error in getSession:', error);
-        setError(`Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         if (mounted) {
           setSession(null);
           setUser(null);
@@ -64,7 +61,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        setError(null); // Clear errors on successful auth change
       }
 
       // Handle specific auth events
@@ -77,6 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
       }
+      
+      if (event === 'SIGNED_IN') {
+        console.log('User signed in successfully');
+      }
     });
 
     return () => {
@@ -85,32 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Show error state if there's a critical error
-  if (error && !loading) {
-    return (
-      <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
-          <h2 className="text-xl font-bold text-red-600 mb-4">Erro de Configuração</h2>
-          <p className="text-gray-700 mb-4">{error}</p>
-          <p className="text-sm text-gray-600">
-            Verifique se as variáveis de ambiente do Supabase estão configuradas corretamente.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      
-      // Clear any existing session first
-      await supabase.auth.signOut();
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -123,10 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('Sign in successful:', data.user?.email);
-      
-      // Wait a bit for the session to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       return data;
     } catch (error) {
       console.error('Sign in error:', error);
@@ -143,9 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: {
-          emailRedirectTo: undefined // Disable email confirmation
-        }
       });
       
       if (error) {
@@ -154,10 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('Sign up successful:', data.user?.email);
-      
-      // Wait for user to be created and trigger to run
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       return data;
     } catch (error) {
       console.error('Sign up error:', error);
