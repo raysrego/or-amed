@@ -3,27 +3,37 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Check for placeholder/example values
-const isPlaceholderUrl = !supabaseUrl || supabaseUrl.includes('ixqjqjqjqjqjqjqj') || supabaseUrl === 'your-project-url';
-const isPlaceholderKey = !supabaseAnonKey || supabaseAnonKey.includes('example_key_here') || supabaseAnonKey === 'your-anon-key';
+// Check for missing or placeholder values
+const isPlaceholderUrl = !supabaseUrl || 
+  supabaseUrl.includes('ixqjqjqjqjqjqjqj') || 
+  supabaseUrl === 'your-project-url' ||
+  supabaseUrl === 'https://your-project-id.supabase.co';
+
+const isPlaceholderKey = !supabaseAnonKey || 
+  supabaseAnonKey.includes('example_key_here') || 
+  supabaseAnonKey === 'your-anon-key' ||
+  supabaseAnonKey === 'your-anon-key-here';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+  console.error('❌ Missing Supabase environment variables');
+  console.error('Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+  console.error('Current values:');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl || 'undefined');
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '[HIDDEN]' : 'undefined');
 }
 
 if (isPlaceholderUrl || isPlaceholderKey) {
-  throw new Error(`
-    Placeholder Supabase credentials detected. Please:
-    1. Create a Supabase project at https://supabase.com
-    2. Go to Settings > API in your Supabase dashboard
-    3. Copy your Project URL and anon/public key
-    4. Update your .env file with the real values
-    
-    Current URL: ${supabaseUrl}
-    Key status: ${isPlaceholderKey ? 'Placeholder detected' : 'Appears valid'}
-  `);
+  console.warn('⚠️ Placeholder Supabase credentials detected');
+  console.warn('For production use, please:');
+  console.warn('1. Create a Supabase project at https://supabase.com');
+  console.warn('2. Go to Settings > API in your Supabase dashboard');
+  console.warn('3. Copy your Project URL and anon/public key');
+  console.warn('4. Update your .env file with the real values');
+  console.warn('Current URL:', supabaseUrl);
+  console.warn('Key status:', isPlaceholderKey ? 'Placeholder detected' : 'Appears valid');
 }
 
+// Create Supabase client with fallback for development
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -49,20 +59,24 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Test connection on initialization with better error handling
-supabase.from('user_profiles').select('count', { count: 'exact', head: true })
-  .then(({ error }) => {
-    if (error) {
-      console.error('Database connection test failed:', error.message);
-      console.error('Please verify your Supabase project is active and your credentials are correct.');
-    } else {
-      console.log('Database connection successful');
-    }
-  })
-  .catch((err) => {
-    console.error('Network error connecting to Supabase:', err.message);
-    console.error('Please check your internet connection and Supabase project status.');
-  });
+// Test connection only if we have valid credentials
+if (supabaseUrl && supabaseAnonKey && !isPlaceholderUrl && !isPlaceholderKey) {
+  supabase.from('user_profiles').select('count', { count: 'exact', head: true })
+    .then(({ error }) => {
+      if (error) {
+        console.error('❌ Database connection test failed:', error.message);
+        console.error('Please verify your Supabase project is active and your credentials are correct.');
+      } else {
+        console.log('✅ Database connection successful');
+      }
+    })
+    .catch((err) => {
+      console.error('❌ Network error connecting to Supabase:', err.message);
+      console.error('Please check your internet connection and Supabase project status.');
+    });
+} else {
+  console.log('⏳ Supabase client created with placeholder credentials - connection test skipped');
+}
 
 // Database types
 export interface Patient {
