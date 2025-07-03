@@ -75,13 +75,17 @@ export default function Register() {
 
     try {
       // Create user account
-      const { data: authData, error: authError } = await signUp(email, password);
-      if (authError) throw authError;
+      await signUp(email, password);
 
-      if (authData.user) {
+      // Get the user after signup
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+
+      if (user) {
         // Create user profile
         const profileData = {
-          user_id: authData.user.id,
+          user_id: user.id,
           name: name,
           role: role,
           crm: role === 'doctor' ? crm : null,
