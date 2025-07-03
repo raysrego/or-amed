@@ -18,6 +18,7 @@ import Budgets from './pages/Budgets';
 import UserProfile from './pages/UserProfile';
 import UserSurgeryRequest from './pages/UserSurgeryRequest';
 import UserBudgetTracking from './pages/UserBudgetTracking';
+import UserManagement from './pages/UserManagement';
 
 function App() {
   return (
@@ -48,6 +49,9 @@ function App() {
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/user-surgery-requests" element={<UserSurgeryRequest />} />
                     <Route path="/user-budget-tracking" element={<UserBudgetTracking />} />
+                    
+                    {/* Admin Routes */}
+                    <Route path="/user-management" element={<UserManagement />} />
                     
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

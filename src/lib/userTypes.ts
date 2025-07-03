@@ -2,10 +2,11 @@ export interface UserProfile {
   id: string;
   user_id: string;
   name: string;
-  role: 'doctor' | 'secretary';
+  role: 'doctor' | 'secretary' | 'admin';
   crm?: string;
   specialty?: string;
   doctor_id?: string;
+  is_admin?: boolean;
   doctor?: UserProfile;
   created_at: string;
 }

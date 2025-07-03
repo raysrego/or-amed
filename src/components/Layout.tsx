@@ -15,7 +15,8 @@ import {
   Heart,
   User,
   ClipboardList,
-  TrendingUp
+  TrendingUp,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import PulseCalculatorLogo from './PulseCalculatorLogo';
@@ -49,6 +50,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia' },
     { path: '/budgets', icon: Calculator, label: 'Orçamentos' },
     { path: '/audit-logs', icon: History, label: 'Logs de Auditoria' },
+    { path: '/user-management', icon: Settings, label: 'Gerenciar Usuários' },
   ];
 
   const userNavItems = [
