@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -33,27 +34,27 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/patients" element={<Patients />} />
-                    <Route path="/doctors" element={<Doctors />} />
-                    <Route path="/procedures" element={<Procedures />} />
-                    <Route path="/anesthesia-types" element={<AnesthesiaTypes />} />
-                    <Route path="/hospitals" element={<Hospitals />} />
-                    <Route path="/suppliers" element={<Suppliers />} />
-                    <Route path="/opmes" element={<OPMEs />} />
-                    <Route path="/surgery-requests" element={<SurgeryRequests />} />
-                    <Route path="/budgets" element={<Budgets />} />
-                    <Route path="/audit-logs" element={<div>Logs de Auditoria em desenvolvimento</div>} />
-                    
-                    {/* User Module Routes */}
+                    {/* User Module Routes - Available to all authenticated users */}
                     <Route path="/user-profile" element={<UserProfile />} />
                     <Route path="/user-surgery-requests" element={<UserSurgeryRequest />} />
                     <Route path="/user-budget-tracking" element={<UserBudgetTracking />} />
                     
-                    {/* Admin Routes */}
-                    <Route path="/user-management" element={<UserManagement />} />
+                    {/* Admin Routes - Only for administrators */}
+                    <Route path="/" element={<AdminRoute><Dashboard /></AdminRoute>} />
+                    <Route path="/patients" element={<AdminRoute><Patients /></AdminRoute>} />
+                    <Route path="/doctors" element={<AdminRoute><Doctors /></AdminRoute>} />
+                    <Route path="/procedures" element={<AdminRoute><Procedures /></AdminRoute>} />
+                    <Route path="/anesthesia-types" element={<AdminRoute><AnesthesiaTypes /></AdminRoute>} />
+                    <Route path="/hospitals" element={<AdminRoute><Hospitals /></AdminRoute>} />
+                    <Route path="/suppliers" element={<AdminRoute><Suppliers /></AdminRoute>} />
+                    <Route path="/opmes" element={<AdminRoute><OPMEs /></AdminRoute>} />
+                    <Route path="/surgery-requests" element={<AdminRoute><SurgeryRequests /></AdminRoute>} />
+                    <Route path="/budgets" element={<AdminRoute><Budgets /></AdminRoute>} />
+                    <Route path="/audit-logs" element={<AdminRoute><div>Logs de Auditoria em desenvolvimento</div></AdminRoute>} />
+                    <Route path="/user-management" element={<AdminRoute><UserManagement /></AdminRoute>} />
                     
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                    {/* Default redirect to user profile for non-admin users */}
+                    <Route path="*" element={<Navigate to="/user-profile" replace />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>
