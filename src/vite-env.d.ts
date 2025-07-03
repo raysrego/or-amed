@@ -1,1 +1,3 @@
 /// <reference types="vite/client" />
+VITE_SUPABASE_URL=https://texzshwurruhkrtzqke.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0ZXh6c2h3dXJydWhrcnR6cWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0MDAyMjcsImV4cCI6MjA2Njk3NjIyN30.RTQClhReQffmWJ57dIY9y0HP1eWjvsavl7SXaI--ylY
