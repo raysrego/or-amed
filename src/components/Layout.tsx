@@ -28,7 +28,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { signOut, user } = useAuth();
-  const { profile, isAdmin } = useUserProfile();
+  const { profile } = useUserProfile();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -40,7 +40,7 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const adminNavItems = [
+  const allNavItems = [
     { path: '/', icon: Activity, label: 'Dashboard', exact: true },
     { path: '/patients', icon: Users, label: 'Pacientes' },
     { path: '/doctors', icon: UserCheck, label: 'Médicos' },
@@ -52,13 +52,13 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia' },
     { path: '/budgets', icon: Calculator, label: 'Orçamentos' },
     { path: '/audit-logs', icon: History, label: 'Logs de Auditoria' },
-    { path: '/user-management', icon: Settings, label: 'Gerenciar Usuários' },
   ];
 
   const userNavItems = [
     { path: '/user-profile', icon: User, label: 'Meu Perfil', exact: true },
-    { path: '/user-surgery-requests', icon: ClipboardList, label: 'Pedidos de Cirurgia' },
-    { path: '/user-budget-tracking', icon: TrendingUp, label: 'Acompanhar Orçamentos' },
+    { path: '/user-surgery-requests', icon: ClipboardList, label: 'Meus Pedidos' },
+    { path: '/user-budget-tracking', icon: TrendingUp, label: 'Meus Orçamentos' },
+    { path: '/user-management', icon: Settings, label: 'Gerenciar Usuários' },
   ];
 
   return (
@@ -81,10 +81,34 @@ export default function Layout({ children }: LayoutProps) {
         
         <nav className="mt-6 flex-1">
           <div className="px-4 space-y-1">
-            {/* User Module Section */}
+            {/* Main System Section */}
             <div className="mb-6">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Área do Usuário
+                Sistema Principal
+              </h3>
+              {allNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.exact}
+                  className={({ isActive }) =>
+                    `flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-green-50 text-green-700 border-r-2 border-green-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`
+                  }
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+
+            {/* User Area Section */}
+            <div>
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Área Pessoal
               </h3>
               {userNavItems.map((item) => (
                 <NavLink
@@ -104,32 +128,6 @@ export default function Layout({ children }: LayoutProps) {
                 </NavLink>
               ))}
             </div>
-
-            {/* Admin Module Section - Only show for admins */}
-            {isAdmin() && (
-              <div>
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Administração
-                </h3>
-                {adminNavItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.exact}
-                    className={({ isActive }) =>
-                      `flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-green-50 text-green-700 border-r-2 border-green-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`
-                    }
-                  >
-                    <item.icon className="mr-3 h-5 w-5" />
-                    {item.label}
-                  </NavLink>
-                ))}
-              </div>
-            )}
           </div>
         </nav>
 

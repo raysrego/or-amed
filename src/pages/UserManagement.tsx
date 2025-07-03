@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Users, UserCheck, Stethoscope, Shield, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, UserCheck, Stethoscope, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { UserProfile } from '../lib/userTypes';
@@ -31,11 +31,9 @@ export default function UserManagement() {
   }, [user]);
 
   useEffect(() => {
-    if (currentUserProfile?.is_admin) {
-      fetchUsers();
-      fetchDoctors();
-    }
-  }, [currentUserProfile]);
+    fetchUsers();
+    fetchDoctors();
+  }, []);
 
   const fetchCurrentUserProfile = async () => {
     try {
@@ -67,7 +65,6 @@ export default function UserManagement() {
           *,
           doctor:user_profiles!doctor_id(*)
         `)
-        .neq('role', 'admin')
         .order('created_at', { ascending: false });
 
       if (result.error) {
@@ -204,7 +201,6 @@ export default function UserManagement() {
     switch (role) {
       case 'doctor': return <Stethoscope className="h-5 w-5 text-green-600" />;
       case 'secretary': return <UserCheck className="h-5 w-5 text-blue-600" />;
-      case 'admin': return <Shield className="h-5 w-5 text-purple-600" />;
       default: return <Users className="h-5 w-5 text-gray-600" />;
     }
   };
@@ -238,18 +234,6 @@ export default function UserManagement() {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
-
-  if (!currentUserProfile?.is_admin) {
-    return (
-      <div className="text-center py-12">
-        <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Negado</h2>
-        <p className="text-gray-600">
-          Você não tem permissão para acessar o gerenciamento de usuários.
-        </p>
       </div>
     );
   }
