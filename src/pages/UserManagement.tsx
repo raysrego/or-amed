@@ -117,31 +117,63 @@ export default function UserManagement() {
         if (result.error) throw result.error;
       } else {
         // Create new user
+        console.log('Creating new user with email:', formData.email);
+        
+        // Step 1: Create auth user
         const authResult = await supabase.auth.signUp({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
+          options: {
+            emailRedirectTo: undefined // Disable email confirmation
+          }
         });
 
-        if (authResult.error) throw authResult.error;
-
-        if (authResult.data.user) {
-          // Create user profile
-          const profileData = {
-            user_id: authResult.data.user.id,
-            name: formData.name,
-            role: formData.role,
-            crm: formData.role === 'doctor' ? formData.crm : null,
-            specialty: formData.role === 'doctor' ? formData.specialty : null,
-            doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
-            is_admin: false,
-          };
-
-          const profileResult = await supabase
-            .from('user_profiles')
-            .insert([profileData]);
-
-          if (profileResult.error) throw profileResult.error;
+        if (authResult.error) {
+          console.error('Auth signup error:', authResult.error);
+          throw new Error(`Erro ao criar usuário: ${authResult.error.message}`);
         }
+
+        if (!authResult.data.user) {
+          throw new Error('Usuário não foi criado corretamente');
+        }
+
+        console.log('Auth user created:', authResult.data.user.id);
+
+        // Step 2: Wait a moment for the user to be fully created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Step 3: Create user profile
+        const profileData = {
+          user_id: authResult.data.user.id,
+          email: formData.email.trim(),
+          name: formData.name,
+          role: formData.role,
+          crm: formData.role === 'doctor' ? formData.crm : null,
+          specialty: formData.role === 'doctor' ? formData.specialty : null,
+          doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+          is_admin: false,
+        };
+
+        console.log('Creating profile with data:', profileData);
+
+        const profileResult = await supabase
+          .from('user_profiles')
+          .insert([profileData]);
+
+        if (profileResult.error) {
+          console.error('Profile creation error:', profileResult.error);
+          
+          // If profile creation fails, try to clean up the auth user
+          try {
+            await supabase.auth.admin.deleteUser(authResult.data.user.id);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup auth user:', cleanupError);
+          }
+          
+          throw new Error(`Erro ao criar perfil do usuário: ${profileResult.error.message}`);
+        }
+
+        console.log('Profile created successfully');
       }
 
       setShowModal(false);
@@ -150,7 +182,8 @@ export default function UserManagement() {
       fetchUsers();
       alert(editingUser ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
     } catch (error: any) {
-      alert('Erro: ' + error.message);
+      console.error('Error in handleSubmit:', error);
+      alert(`Erro: ${error.message || 'Erro desconhecido ao salvar usuário'}`);
     }
   };
 
@@ -299,6 +332,12 @@ export default function UserManagement() {
             </div>
 
             <div className="space-y-2 text-sm">
+              {userProfile.email && (
+                <div className="text-gray-600">
+                  <strong>Email:</strong> {userProfile.email}
+                </div>
+              )}
+              
               {userProfile.role === 'doctor' && (
                 <>
                   <div className="text-gray-600">
@@ -356,6 +395,7 @@ export default function UserManagement() {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         required
+                        placeholder="usuario@exemplo.com"
                       />
                     </div>
                     
@@ -395,6 +435,7 @@ export default function UserManagement() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
+                    placeholder="Nome completo do usuário"
                   />
                 </div>
 
