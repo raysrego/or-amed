@@ -3,10 +3,25 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Check for placeholder/example values
+const isPlaceholderUrl = !supabaseUrl || supabaseUrl.includes('ixqjqjqjqjqjqjqj') || supabaseUrl === 'your-project-url';
+const isPlaceholderKey = !supabaseAnonKey || supabaseAnonKey.includes('example_key_here') || supabaseAnonKey === 'your-anon-key';
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL:', supabaseUrl);
-  console.error('Supabase Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+  throw new Error('Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+}
+
+if (isPlaceholderUrl || isPlaceholderKey) {
+  throw new Error(`
+    Placeholder Supabase credentials detected. Please:
+    1. Create a Supabase project at https://supabase.com
+    2. Go to Settings > API in your Supabase dashboard
+    3. Copy your Project URL and anon/public key
+    4. Update your .env file with the real values
+    
+    Current URL: ${supabaseUrl}
+    Key status: ${isPlaceholderKey ? 'Placeholder detected' : 'Appears valid'}
+  `);
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -34,15 +49,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Test connection on initialization
+// Test connection on initialization with better error handling
 supabase.from('user_profiles').select('count', { count: 'exact', head: true })
   .then(({ error }) => {
     if (error) {
-      console.error('Database connection test failed:', error);
+      console.error('Database connection test failed:', error.message);
+      console.error('Please verify your Supabase project is active and your credentials are correct.');
     } else {
       console.log('Database connection successful');
     }
+  })
+  .catch((err) => {
+    console.error('Network error connecting to Supabase:', err.message);
+    console.error('Please check your internet connection and Supabase project status.');
   });
+
 // Database types
 export interface Patient {
   id: string;
