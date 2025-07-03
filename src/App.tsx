@@ -15,6 +15,9 @@ import Suppliers from './pages/Suppliers';
 import OPMEs from './pages/OPMEs';
 import SurgeryRequests from './pages/SurgeryRequests';
 import Budgets from './pages/Budgets';
+import UserProfile from './pages/UserProfile';
+import UserSurgeryRequest from './pages/UserSurgeryRequest';
+import UserBudgetTracking from './pages/UserBudgetTracking';
 
 function App() {
   return (
@@ -40,6 +43,12 @@ function App() {
                     <Route path="/surgery-requests" element={<SurgeryRequests />} />
                     <Route path="/budgets" element={<Budgets />} />
                     <Route path="/audit-logs" element={<div>Logs de Auditoria em desenvolvimento</div>} />
+                    
+                    {/* User Module Routes */}
+                    <Route path="/user-profile" element={<UserProfile />} />
+                    <Route path="/user-surgery-requests" element={<UserSurgeryRequest />} />
+                    <Route path="/user-budget-tracking" element={<UserBudgetTracking />} />
+                    
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Layout>

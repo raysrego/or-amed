@@ -12,7 +12,10 @@ import {
   History,
   LogOut,
   Activity,
-  Heart
+  Heart,
+  User,
+  ClipboardList,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import PulseCalculatorLogo from './PulseCalculatorLogo';
@@ -34,7 +37,7 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const navItems = [
+  const adminNavItems = [
     { path: '/', icon: Activity, label: 'Dashboard', exact: true },
     { path: '/patients', icon: Users, label: 'Pacientes' },
     { path: '/doctors', icon: UserCheck, label: 'Médicos' },
@@ -46,6 +49,12 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia' },
     { path: '/budgets', icon: Calculator, label: 'Orçamentos' },
     { path: '/audit-logs', icon: History, label: 'Logs de Auditoria' },
+  ];
+
+  const userNavItems = [
+    { path: '/user-profile', icon: User, label: 'Meu Perfil', exact: true },
+    { path: '/user-surgery-requests', icon: ClipboardList, label: 'Pedidos de Cirurgia' },
+    { path: '/user-budget-tracking', icon: TrendingUp, label: 'Acompanhar Orçamentos' },
   ];
 
   return (
@@ -68,23 +77,53 @@ export default function Layout({ children }: LayoutProps) {
         
         <nav className="mt-6 flex-1">
           <div className="px-4 space-y-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.exact}
-                className={({ isActive }) =>
-                  `flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-green-50 text-green-700 border-r-2 border-green-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`
-                }
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.label}
-              </NavLink>
-            ))}
+            {/* User Module Section */}
+            <div className="mb-6">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Área do Usuário
+              </h3>
+              {userNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.exact}
+                  className={({ isActive }) =>
+                    `flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`
+                  }
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+
+            {/* Admin Module Section */}
+            <div>
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Administração
+              </h3>
+              {adminNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.exact}
+                  className={({ isActive }) =>
+                    `flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-green-50 text-green-700 border-r-2 border-green-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`
+                  }
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
           </div>
         </nav>
 
