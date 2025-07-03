@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Sign in successful:', data.user?.email);
       
       // Wait a bit for the session to be established
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       return data;
     } catch (error) {
@@ -130,6 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('Sign up successful:', data.user?.email);
+      
+      // Wait for user to be created and trigger to run
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       return data;
     } catch (error) {
       console.error('Sign up error:', error);

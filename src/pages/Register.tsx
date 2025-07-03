@@ -62,35 +62,66 @@ export default function Register() {
       if (authData.user) {
         console.log('User created, creating profile...');
         
-        // Wait a moment for the user to be fully created
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for the user to be fully created and any triggers to run
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Create user profile
-        const profileData = {
-          user_id: authData.user.id,
-          name: name,
-          role: role,
-          crm: role === 'doctor' ? crm : null,
-          specialty: role === 'doctor' ? specialty : null,
-          doctor_id: null,
-          is_admin: false,
-        };
+        try {
+          // Create user profile with retry logic
+          const profileData = {
+            user_id: authData.user.id,
+            name: name,
+            role: role,
+            crm: role === 'doctor' ? crm : null,
+            specialty: role === 'doctor' ? specialty : null,
+            doctor_id: null,
+            is_admin: false,
+          };
 
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert([profileData]);
+          console.log('Creating profile with data:', profileData);
 
-        if (profileError) {
-          console.error('Profile error:', profileError);
-          throw profileError;
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert([profileData]);
+
+          if (profileError) {
+            console.error('Profile error:', profileError);
+            
+            // If it's a duplicate key error, try to update instead
+            if (profileError.code === '23505') {
+              console.log('Profile already exists, updating...');
+              const { error: updateError } = await supabase
+                .from('user_profiles')
+                .update({
+                  name: name,
+                  role: role,
+                  crm: role === 'doctor' ? crm : null,
+                  specialty: role === 'doctor' ? specialty : null,
+                })
+                .eq('user_id', authData.user.id);
+              
+              if (updateError) {
+                throw updateError;
+              }
+            } else {
+              throw profileError;
+            }
+          }
+
+          console.log('Profile created/updated successfully');
+          setSuccess(true);
+          
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        } catch (profileError: any) {
+          console.error('Profile creation failed:', profileError);
+          // Even if profile creation fails, the user was created successfully
+          // They can complete their profile later
+          setSuccess(true);
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
         }
-
-        console.log('Profile created successfully');
-        setSuccess(true);
-        
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
       }
     } catch (error: any) {
       console.error('Registration error:', error);

@@ -87,27 +87,57 @@ export default function UserProfile() {
         crm: formData.role === 'doctor' ? formData.crm : null,
         specialty: formData.role === 'doctor' ? formData.specialty : null,
         doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+        is_admin: false, // Ensure regular users are not admin
       };
 
       if (profile) {
+        // Update existing profile
         const result = await supabase
           .from('user_profiles')
           .update(profileData)
           .eq('id', profile.id);
         
-        if (result.error) throw result.error;
+        if (result.error) {
+          console.error('Update error:', result.error);
+          throw result.error;
+        }
       } else {
+        // Create new profile
         const result = await supabase
           .from('user_profiles')
           .insert([profileData]);
         
-        if (result.error) throw result.error;
+        if (result.error) {
+          console.error('Insert error:', result.error);
+          
+          // If it's a duplicate key error, try to update instead
+          if (result.error.code === '23505') {
+            console.log('Profile already exists, trying to update...');
+            const updateResult = await supabase
+              .from('user_profiles')
+              .update({
+                name: formData.name,
+                role: formData.role,
+                crm: formData.role === 'doctor' ? formData.crm : null,
+                specialty: formData.role === 'doctor' ? formData.specialty : null,
+                doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+              })
+              .eq('user_id', user?.id);
+            
+            if (updateResult.error) {
+              throw updateResult.error;
+            }
+          } else {
+            throw result.error;
+          }
+        }
       }
 
       await fetchProfile();
       alert('Perfil salvo com sucesso!');
     } catch (error: any) {
-      alert('Erro ao salvar perfil: ' + error.message);
+      console.error('Error saving profile:', error);
+      alert('Erro ao salvar perfil: ' + (error.message || 'Erro desconhecido'));
     } finally {
       setSaving(false);
     }
