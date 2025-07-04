@@ -191,6 +191,26 @@ export default function Budgets() {
 
     const procedureNames = getProcedureNames(request.procedure_ids || []);
 
+    // Função local para formatar moeda na impressão
+    const formatCurrencyForPrint = (value: number) => {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(value);
+    };
+
+    // Função local para obter label de status na impressão
+    const getStatusLabelForPrint = (status: string) => {
+      const labels = {
+        'APPROVED': 'Aprovado',
+        'AWAITING_QUOTE': 'Aguardando Cotação',
+        'AWAITING_PATIENT': 'Aguardando Paciente',
+        'AWAITING_PAYMENT': 'Aguardando Pagamento',
+        'CANCELED': 'Cancelado',
+      };
+      return labels[status as keyof typeof labels] || status;
+    };
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -322,14 +342,14 @@ export default function Budgets() {
             <h3>Custos de Internação</h3>
             <div class="grid">
               <div>
-                ${request.icu_days ? `<div class="item"><span class="label">UTI (${request.icu_days} diárias):</span> ${formatCurrency((budget.icu_daily_cost || 0) * request.icu_days)}</div>` : ''}
-                ${request.ward_days ? `<div class="item"><span class="label">Enfermaria (${request.ward_days} diárias):</span> ${formatCurrency((budget.ward_daily_cost || 0) * request.ward_days)}</div>` : ''}
-                ${request.room_days ? `<div class="item"><span class="label">Apartamento (${request.room_days} diárias):</span> ${formatCurrency((budget.room_daily_cost || 0) * request.room_days)}</div>` : ''}
+                ${request.icu_days ? `<div class="item"><span class="label">UTI (${request.icu_days} diárias):</span> ${formatCurrencyForPrint((budget.icu_daily_cost || 0) * request.icu_days)}</div>` : ''}
+                ${request.ward_days ? `<div class="item"><span class="label">Enfermaria (${request.ward_days} diárias):</span> ${formatCurrencyForPrint((budget.ward_daily_cost || 0) * request.ward_days)}</div>` : ''}
+                ${request.room_days ? `<div class="item"><span class="label">Apartamento (${request.room_days} diárias):</span> ${formatCurrencyForPrint((budget.room_daily_cost || 0) * request.room_days)}</div>` : ''}
               </div>
               <div>
-                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
-                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Honorário Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
-                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrency(budget.evoked_potential_fee)}</div>` : ''}
+                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrencyForPrint(budget.doctor_fee)}</div>
+                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Honorário Anestesista:</span> ${formatCurrencyForPrint(budget.anesthetist_fee)}</div>` : ''}
+                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrencyForPrint(budget.evoked_potential_fee)}</div>` : ''}
               </div>
             </div>
           </div>
@@ -345,18 +365,18 @@ export default function Budgets() {
                   <div class="opme-item">
                     <div><span class="label">Material:</span> ${opme?.name} - ${opme?.brand}</div>
                     <div><span class="label">Fornecedor:</span> ${supplier?.name}</div>
-                    <div><span class="label">Valor:</span> ${formatCurrency(selectedQuote?.price || 0)}</div>
+                    <div><span class="label">Valor:</span> ${formatCurrencyForPrint(selectedQuote?.price || 0)}</div>
                   </div>
                 `;
               }).join('')}
-              <div class="item"><span class="label">Total OPME:</span> ${formatCurrency(opmeTotal)}</div>
+              <div class="item"><span class="label">Total OPME:</span> ${formatCurrencyForPrint(opmeTotal)}</div>
             </div>
           ` : ''}
 
           <div class="total-section">
-            <div class="subtotal"><span class="label">Subtotal:</span> ${formatCurrency(subtotal)}</div>
-            <div class="service-fee"><span class="label">Taxa de Serviço (5%):</span> ${formatCurrency(serviceFee)}</div>
-            <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrency(total)}</div>
+            <div class="subtotal"><span class="label">Subtotal:</span> ${formatCurrencyForPrint(subtotal)}</div>
+            <div class="service-fee"><span class="label">Taxa de Serviço (2%):</span> ${formatCurrencyForPrint(serviceFee)}</div>
+            <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrencyForPrint(total)}</div>
           </div>
 
           ${budget.observations ? `
@@ -367,7 +387,7 @@ export default function Budgets() {
           ` : ''}
 
           <div class="section" style="margin-top: 40px;">
-            <p><span class="label">Status:</span> ${getStatusLabel(budget.status)}</p>
+            <p><span class="label">Status:</span> ${getStatusLabelForPrint(budget.status)}</p>
             <p><span class="label">Data do Orçamento:</span> ${new Date(budget.created_at).toLocaleDateString('pt-BR')}</p>
           </div>
         </body>
@@ -815,7 +835,7 @@ export default function Budgets() {
                       <span className="text-green-900">{formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-green-700">Taxa de Serviço (5%):</span>
+                      <span className="text-green-700">Taxa de Serviço (2%):</span>
                       <span className="text-green-900">{formatCurrency(serviceFee)}</span>
                     </div>
                     <div className="flex items-center justify-between border-t border-green-200 pt-1">
