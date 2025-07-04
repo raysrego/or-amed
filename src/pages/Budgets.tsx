@@ -1017,7 +1017,7 @@ export default function Budgets() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Custo UTI/dia (R$)
+                      Custos do Hospital (inclui todas as diárias) (R$)
                     </label>
                     <input
                       type="number"
@@ -1031,7 +1031,7 @@ export default function Budgets() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Custo Enfermaria/dia (R$)
+                      Custos do Hospital (internação enfermaria) (R$)
                     </label>
                     <input
                       type="number"
@@ -1045,7 +1045,7 @@ export default function Budgets() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Custo Quarto/dia (R$)
+                      Custos do Hospital (internação apartamento) (R$)
                     </label>
                     <input
                       type="number"
