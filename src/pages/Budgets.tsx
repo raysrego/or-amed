@@ -805,17 +805,18 @@ export default function Budgets() {
                 
                 {/* Cost Breakdown */}
                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                  <div className="text-xs text-gray-600 space-y-1">
-                    {budget.surgery_request?.icu_days && budget.icu_daily_cost && (
-                    <div>UTI: {formatCurrency(budget.icu_daily_cost)}</div>
-       
+  <div className="text-xs text-gray-600 space-y-1">
+    {budget.icu_daily_cost && (
+      <div>UTI: {formatCurrency(budget.icu_daily_cost)}</div>
+    )}
 
-                    {budget.surgery_request?.ward_days && budget.ward_daily_cost && (
-                      <div>Enfermaria ({budget.surgery_request.ward_days} diárias): {formatCurrency(budget.ward_daily_cost * budget.surgery_request.ward_days)}</div>
-                    )}
-                    {budget.surgery_request?.room_days && budget.room_daily_cost && (
-                      <div>Apartamento ({budget.surgery_request.room_days} diárias): {formatCurrency(budget.room_daily_cost * budget.surgery_request.room_days)}</div>
-                    )}
+    {budget.ward_daily_cost && (
+      <div>Enfermaria: {formatCurrency(budget.ward_daily_cost)}</div>
+    )}
+
+    {budget.room_daily_cost && (
+      <div>Apartamento: {formatCurrency(budget.room_daily_cost)}</div>
+    )}
                     {budget.anesthetist_fee && (
                       <div>Anestesista: {formatCurrency(budget.anesthetist_fee)}</div>
                     )}
