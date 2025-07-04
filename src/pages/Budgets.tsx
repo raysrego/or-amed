@@ -342,9 +342,9 @@ export default function Budgets() {
             <h3>Custos de Internação</h3>
             <div class="grid">
               <div>
-                ${request.icu_days ? `<div class="item"><span class="label">Custos Total do Hospital com UTI):</span> ${formatCurrencyForPrint((budget.icu_daily_cost || 0) * request.icu_days)}</div>` : ''}
-                ${request.ward_days ? `<div class="item"><span class="label">Custos Total do Hospital somente Enfermaria):</span> ${formatCurrencyForPrint((budget.ward_daily_cost || 0) * request.ward_days)}</div>` : ''}
-                ${request.room_days ? `<div class="item"><span class="label">Custos Total do Hospital somente Apartamente):</span> ${formatCurrencyForPrint((budget.room_daily_cost || 0) * request.room_days)}</div>` : ''}
+                ${request.icu_days ? `<div class="item"><span class="label">Custos do Hospital com UTI):</span> ${formatCurrencyForPrint((budget.icu_daily_cost || 0) * request.icu_days)}</div>` : ''}
+                ${request.ward_days ? `<div class="item"><span class="label">Custos do Hospital somente Enfermaria):</span> ${formatCurrencyForPrint((budget.ward_daily_cost || 0) * request.ward_days)}</div>` : ''}
+                ${request.room_days ? `<div class="item"><span class="label">Custos do Hospital somente Apartamente):</span> ${formatCurrencyForPrint((budget.room_daily_cost || 0) * request.room_days)}</div>` : ''}
               </div>
               <div>
                 <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrencyForPrint(budget.doctor_fee)}</div>
