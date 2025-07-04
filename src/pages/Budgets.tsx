@@ -807,8 +807,9 @@ export default function Budgets() {
                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                   <div className="text-xs text-gray-600 space-y-1">
                     {budget.surgery_request?.icu_days && budget.icu_daily_cost && (
-                      <div>UTI ({budget.surgery_request.icu_days} diárias): {formatCurrency(budget.icu_daily_cost * budget.surgery_request.icu_days)}</div>
-                    )}
+                    <div>UTI: {formatCurrency(budget.icu_daily_cost)}</div>
+       
+
                     {budget.surgery_request?.ward_days && budget.ward_daily_cost && (
                       <div>Enfermaria ({budget.surgery_request.ward_days} diárias): {formatCurrency(budget.ward_daily_cost * budget.surgery_request.ward_days)}</div>
                     )}
