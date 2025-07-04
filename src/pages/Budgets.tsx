@@ -339,7 +339,7 @@ export default function Budgets() {
             <h3>Custos de Internação</h3>
             <div class="grid">
               <div>
-                ${budget.icu_daily_cost ? `<div class="item"><span class="label">Custos do Hospital com UTI):</span> ${formatCurrencyForPrint(budget.icu_daily_cost)}</div>` : ''}
+                ${budget.icu_daily_cost ? `<div class="item"><span class="label">Custos do Hospital):</span> ${formatCurrencyForPrint(budget.icu_daily_cost)}</div>` : ''}
 ${budget.ward_daily_cost ? `<div class="item"><span class="label">Custos do Hospital somente Enfermaria):</span> ${formatCurrencyForPrint(budget.ward_daily_cost)}</div>` : ''}
 ${budget.room_daily_cost ? `<div class="item"><span class="label">Custos do Hospital somente Apartamente):</span> ${formatCurrencyForPrint(budget.room_daily_cost)}</div>` : ''}
 
