@@ -139,10 +139,7 @@ export default function Budgets() {
 
     let subtotal = 0;
 
-    // Add accommodation costs
-    subtotal += (budget.icu_daily_cost || 0);
-    subtotal += (budget.ward_daily_cost || 0);
-    subtotal += (budget.room_daily_cost || 0);
+  
 
     // Add fees
     subtotal += budget.anesthetist_fee || 0;
