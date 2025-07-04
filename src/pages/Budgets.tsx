@@ -139,7 +139,14 @@ export default function Budgets() {
 
     let subtotal = 0;
 
-  
+    // 👉 Adiciona custo de internação, se existir
+  const internacao =
+    budget.icu_daily_cost ||
+    budget.ward_daily_cost ||
+    budget.room_daily_cost ||
+    0;
+
+  subtotal += internacao;
 
     // Add fees
     subtotal += budget.anesthetist_fee || 0;
