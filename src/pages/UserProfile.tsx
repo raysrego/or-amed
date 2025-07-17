@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { User, UserCheck, Stethoscope, Save } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabaseClient';
+import { UserProfile as UserProfileType } from '../lib/userTypes';
 
 const UserProfile = () => {
   const { user } = useAuth();
