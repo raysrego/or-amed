@@ -121,29 +121,31 @@ export default function UserManagement() {
     // Validate required fields
     validateUserData();
     
-    // Check if current user is admin
-    if (!currentUserProfile?.is_admin) {
-      throw new Error('Apenas administradores podem criar usuários');
-    }
-    
-    const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
-    
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Create user profile directly (without auth signup)
+    const profileData = {
       email: formData.email.trim(),
-      password: formData.password || defaultPassword,
-    });
+      name: formData.name.trim(),
+      role: formData.role,
+      crm: formData.role === 'doctor' ? formData.crm?.trim() : null,
+      specialty: formData.role === 'doctor' ? formData.specialty?.trim() : null,
+      doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+      is_admin: false,
+    };
 
-    if (authError) {
-      throw new Error(parseAuthError(authError.message));
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .insert([profileData]);
+
+    if (profileError) {
+      throw new Error(parseProfileError(profileError.message));
     }
 
-    if (!authData.user) {
-      throw new Error('Falha na criação do usuário de autenticação');
-    }
-
-    // Create user profile
-    await createUserProfile(authData.user.id, defaultPassword);
+    const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
+    const passwordMessage = formData.password 
+      ? 'Usuário criado com sucesso!' 
+      : `Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`;
+    
+    alert(passwordMessage);
   };
 
   const validateUserData = () => {
@@ -163,56 +165,13 @@ export default function UserManagement() {
     }
   };
 
-  const createUserProfile = async (userId: string, defaultPassword: string) => {
-    const profileData = {
-      user_id: userId,
-      email: formData.email.trim(),
-      name: formData.name.trim(),
-      role: formData.role,
-      crm: formData.role === 'doctor' ? formData.crm?.trim() : null,
-      specialty: formData.role === 'doctor' ? formData.specialty?.trim() : null,
-      doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
-      is_admin: false,
-    };
 
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .insert([profileData]);
-
-    if (profileError) {
-      // Cleanup auth user if profile creation fails
-      try {
-        // Note: Cannot delete user without admin API, but profile creation should work
-        console.error('Profile creation failed:', profileError);
-      } catch (cleanupError) {
-        console.error('Failed to cleanup auth user:', cleanupError);
-      }
-      throw new Error(parseProfileError(profileError.message));
-    }
-
-    // Show success message with password
-    const passwordMessage = formData.password 
-      ? 'Usuário criado com sucesso!' 
-      : `Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`;
-    
-    alert(passwordMessage);
-  };
-
-  const parseAuthError = (message: string): string => {
-    if (message.includes('User already registered')) {
-      return 'Este email já está cadastrado no sistema';
-    }
-    if (message.includes('Invalid email')) {
-      return 'Email inválido. Verifique o formato';
-    }
-    if (message.includes('Password should be at least')) {
-      return 'A senha deve ter pelo menos 6 caracteres';
-    }
-    return `Erro na autenticação: ${message}`;
-  };
 
   const parseProfileError = (message: string): string => {
     if (message.includes('duplicate key')) {
+      return 'Este email já está cadastrado no sistema';
+    }
+    if (message.includes('unique constraint')) {
       return 'Este email já está cadastrado no sistema';
     }
     if (message.includes('violates not-null constraint')) {
@@ -604,7 +563,7 @@ export default function UserManagement() {
                       <option value="">Selecione um médico (opcional)</option>
                       {doctorUsers.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} - {doctor.specialty} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
+                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>
                       ))}
                     </select>
