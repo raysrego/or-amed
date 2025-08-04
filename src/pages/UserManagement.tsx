@@ -9,7 +9,7 @@ export default function UserManagement() {
   const { user } = useAuth();
   const { profile: currentUserProfile, loading: profileLoading } = useUserProfile();
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [doctorUsers, setDoctorUsers] = useState<UserProfile[]>([]);
+  const [doctors, setDoctors] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -28,7 +28,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
-    fetchDoctorUsers();
+    fetchDoctors();
   }, []);
 
   const fetchUsers = async () => {
@@ -53,7 +53,7 @@ export default function UserManagement() {
     }
   };
 
-  const fetchDoctorUsers = async () => {
+  const fetchDoctors = async () => {
     try {
       const result = await supabase
         .from('user_profiles')
@@ -65,9 +65,9 @@ export default function UserManagement() {
         throw result.error;
       }
 
-      setDoctorUsers(result.data || []);
+      setDoctors(result.data || []);
     } catch (error) {
-      console.error('Error fetching doctor users:', error);
+      console.error('Error fetching doctors:', error);
     }
   };
 
@@ -77,29 +77,28 @@ export default function UserManagement() {
     setFormLoading(true);
     
     try {
-      await handleUserOperation();
+      if (editingUser) {
+        await updateUser();
+      } else {
+        await createUser();
+      }
 
       setShowModal(false);
       setEditingUser(null);
       resetForm();
       fetchUsers();
+      fetchDoctors();
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
-      alert(parseErrorMessage(error.message));
+      alert(error.message || 'Erro ao salvar usuário');
     } finally {
       setFormLoading(false);
     }
   };
 
-  const handleUserOperation = async () => {
-    if (editingUser) {
-      await updateExistingUser();
-    } else {
-      await createNewUser();
-    }
-  };
-
-  const updateExistingUser = async () => {
+  const updateUser = async () => {
+    if (!editingUser) return;
+    
     const profileData = {
       name: formData.name,
       role: formData.role,
@@ -117,11 +116,27 @@ export default function UserManagement() {
     alert('Usuário atualizado com sucesso!');
   };
 
-  const createNewUser = async () => {
-    // Validate required fields
-    validateUserData();
+  const createUser = async () => {
+    // Validações
+    if (!formData.email?.trim()) throw new Error('Email é obrigatório');
+    if (!formData.name?.trim()) throw new Error('Nome é obrigatório');
+    if (formData.role === 'doctor') {
+      if (!formData.crm?.trim()) throw new Error('CRM é obrigatório para médicos');
+      if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória para médicos');
+    }
     
-    // Create user profile directly (without auth signup)
+    // Verificar se email já existe
+    const { data: existingUser } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', formData.email.trim())
+      .single();
+    
+    if (existingUser) {
+      throw new Error('Este email já está cadastrado');
+    }
+    
+    // Criar perfil
     const profileData = {
       email: formData.email.trim(),
       name: formData.name.trim(),
@@ -137,60 +152,13 @@ export default function UserManagement() {
       .insert([profileData]);
 
     if (profileError) {
-      throw new Error(parseProfileError(profileError.message));
-    }
-
-    const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
-    const passwordMessage = formData.password 
-      ? 'Usuário criado com sucesso!' 
-      : `Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`;
-    
-    alert(passwordMessage);
-  };
-
-  const validateUserData = () => {
-    if (!formData.email?.trim()) {
-      throw new Error('Email é obrigatório');
-    }
-    if (!formData.name?.trim()) {
-      throw new Error('Nome é obrigatório');
-    }
-    if (formData.role === 'doctor') {
-      if (!formData.crm?.trim()) {
-        throw new Error('CRM é obrigatório para médicos');
+      if (profileError.message.includes('duplicate key')) {
+        throw new Error('Este email já está cadastrado');
       }
-      if (!formData.specialty?.trim()) {
-        throw new Error('Especialidade é obrigatória para médicos');
-      }
+      throw new Error('Erro ao criar usuário: ' + profileError.message);
     }
-  };
 
-
-
-  const parseProfileError = (message: string): string => {
-    if (message.includes('duplicate key')) {
-      return 'Este email já está cadastrado no sistema';
-    }
-    if (message.includes('unique constraint')) {
-      return 'Este email já está cadastrado no sistema';
-    }
-    if (message.includes('violates not-null constraint')) {
-      return 'Todos os campos obrigatórios devem ser preenchidos';
-    }
-    if (message.includes('violates foreign key constraint')) {
-      return 'Médico selecionado não encontrado';
-    }
-    return `Erro ao criar perfil: ${message}`;
-  };
-
-  const parseErrorMessage = (message: string): string => {
-    if (message.includes('Failed to fetch')) {
-      return 'Erro de conexão. Verifique sua internet e tente novamente';
-    }
-    if (message.includes('JWT')) {
-      return 'Sessão expirada. Faça login novamente';
-    }
-    return message;
+    alert('Usuário criado com sucesso!');
   };
 
   const handleEdit = (userProfile: UserProfile) => {
@@ -561,7 +529,7 @@ export default function UserManagement() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Selecione um médico (opcional)</option>
-                      {doctorUsers.map((doctor) => (
+                      {doctors.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
                           Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>
