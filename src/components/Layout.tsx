@@ -51,14 +51,14 @@ export default function Layout({ children }: LayoutProps) {
 
   const allNavItems: NavItem[] = [
     { path: '/', icon: Activity, label: 'Dashboard', exact: true },
-    { path: '/patients', icon: Users, label: 'Pacientes', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/patients', icon: Users, label: 'Pacientes', roles: ['doctor', 'secretary'] },
     { path: '/doctors', icon: UserCheck, label: 'Médicos', adminOnly: true },
-    { path: '/procedures', icon: Scissors, label: 'Procedimentos', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/procedures', icon: Scissors, label: 'Procedimentos', roles: ['doctor', 'secretary'] },
     { path: '/anesthesia-types', icon: Heart, label: 'Tipos de Anestesia', adminOnly: true },
     { path: '/hospitals', icon: Building2, label: 'Hospitais', adminOnly: true },
     { path: '/suppliers', icon: Truck, label: 'Fornecedores', adminOnly: true },
-    { path: '/opmes', icon: ShoppingCart, label: 'OPMEs', roles: ['admin', 'doctor', 'secretary'] },
-    { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/opmes', icon: ShoppingCart, label: 'OPMEs', roles: ['doctor', 'secretary'] },
+    { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia', roles: ['doctor', 'secretary'] },
     { path: '/budgets', icon: Calculator, label: 'Orçamentos', adminOnly: true },
     { path: '/audit-logs', icon: History, label: 'Logs de Auditoria', adminOnly: true },
   ];

@@ -51,7 +51,7 @@ function App() {
                     
                     {/* System Routes with Role-based Access */}
                     <Route path="/patients" element={
-                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                      <ProtectedRoute roles={['doctor', 'secretary']}>
                         <Patients />
                       </ProtectedRoute>
                     } />
@@ -61,7 +61,7 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/procedures" element={
-                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                      <ProtectedRoute roles={['doctor', 'secretary']}>
                         <Procedures />
                       </ProtectedRoute>
                     } />
@@ -81,12 +81,12 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/opmes" element={
-                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                      <ProtectedRoute roles={['doctor', 'secretary']}>
                         <OPMEs />
                       </ProtectedRoute>
                     } />
                     <Route path="/surgery-requests" element={
-                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                      <ProtectedRoute roles={['doctor', 'secretary']}>
                         <SurgeryRequests />
                       </ProtectedRoute>
                     } />

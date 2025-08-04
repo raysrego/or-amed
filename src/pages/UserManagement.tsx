@@ -103,7 +103,6 @@ export default function UserManagement() {
         const profileData = {
           name: formData.name,
           role: formData.role,
-          old_role: formData.role, // Ensure old_role is set
           crm: formData.role === 'doctor' ? formData.crm : null,
           specialty: formData.role === 'doctor' ? formData.specialty : null,
           doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
@@ -117,7 +116,14 @@ export default function UserManagement() {
         if (result.error) throw result.error;
       } else {
         // Create new user
-        console.log('Creating new user with email:', formData.email);
+        // Validate required fields first
+        if (!formData.email || !formData.name) {
+          throw new Error('Email e nome são obrigatórios');
+        }
+        
+        if (formData.role === 'doctor' && (!formData.crm || !formData.specialty)) {
+          throw new Error('CRM e especialidade são obrigatórios para médicos');
+        }
         
         // Generate default password: first name + "123"
         const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
@@ -132,40 +138,42 @@ export default function UserManagement() {
         });
 
         if (authResult.error) {
-          console.error('Auth signup error:', authResult.error);
-          throw new Error(`Erro ao criar usuário: ${authResult.error.message}`);
+          // Handle auth-specific errors
+          if (authResult.error.message.includes('User already registered')) {
+            throw new Error('Este email já está cadastrado no sistema');
+          } else if (authResult.error.message.includes('Invalid email')) {
+            throw new Error('Email inválido. Verifique o formato');
+          } else if (authResult.error.message.includes('Password should be at least')) {
+            throw new Error('A senha deve ter pelo menos 6 caracteres');
+          } else {
+            throw new Error(`Erro na autenticação: ${authResult.error.message}`);
+          }
         }
 
         if (!authResult.data.user) {
-          throw new Error('Usuário não foi criado corretamente');
+          throw new Error('Falha na criação do usuário de autenticação');
         }
 
-        console.log('Auth user created:', authResult.data.user.id);
 
-        // Step 2: Wait a moment for the user to be fully created
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Step 2: Wait for the user to be fully created
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Step 3: Create user profile
-        const profileData = {
-          user_id: authResult.data.user.id,
-          email: formData.email.trim(),
-          name: formData.name,
-          role: formData.role,
-          old_role: formData.role, // Ensure old_role is set
-          crm: formData.role === 'doctor' ? formData.crm : null,
-          specialty: formData.role === 'doctor' ? formData.specialty : null,
-          doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
-          is_admin: false,
-        };
+        // Step 3: Create user profile using safe function
+        const { data: profileData, error: profileError } = await supabase.rpc(
+          'create_user_profile_safe',
+          {
+            p_user_id: authResult.data.user.id,
+            p_email: formData.email.trim(),
+            p_name: formData.name,
+            p_role: formData.role,
+            p_crm: formData.role === 'doctor' ? formData.crm : null,
+            p_specialty: formData.role === 'doctor' ? formData.specialty : null,
+            p_doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+          }
+        );
 
-        console.log('Creating profile with data:', profileData);
-
-        const profileResult = await supabase
-          .from('user_profiles')
-          .insert([profileData]);
-
-        if (profileResult.error) {
-          console.error('Profile creation error:', profileResult.error);
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
           
           // If profile creation fails, try to clean up the auth user
           try {
@@ -174,14 +182,19 @@ export default function UserManagement() {
             console.error('Failed to cleanup auth user:', cleanupError);
           }
           
-          throw new Error(`Erro ao criar perfil do usuário: ${profileResult.error.message}`);
+          // Use our error parsing function for better messages
+          const { data: friendlyError } = await supabase.rpc('get_user_creation_error', {
+            error_message: profileError.message
+          });
+          
+          throw new Error(friendlyError || profileError.message);
         }
 
-        console.log('Profile created successfully');
-        
         // Show the generated password to admin
         if (!formData.password) {
           alert(`Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`);
+        } else {
+          alert('Usuário criado com sucesso!');
         }
       }
 
@@ -194,7 +207,18 @@ export default function UserManagement() {
       }
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
-      alert(`Erro: ${error.message || 'Erro desconhecido ao salvar usuário'}`);
+      
+      // Show user-friendly error messages
+      let errorMessage = error.message;
+      
+      // Additional error parsing for common issues
+      if (errorMessage.includes('Failed to fetch')) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente';
+      } else if (errorMessage.includes('JWT')) {
+        errorMessage = 'Sessão expirada. Faça login novamente';
+      }
+      
+      alert(errorMessage);
     }
   };
 
