@@ -189,6 +189,8 @@ export default function Budgets() {
 
     const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
 
+    const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
+
     const procedureNames = getProcedureNames(request.procedure_ids || []);
 
     // Função local para formatar moeda na impressão
@@ -219,9 +221,9 @@ export default function Budgets() {
             <h3>Detalhamento de Custos</h3>
             <div class="grid">
               <div>
-                ${budget.icu_daily_cost ? `<div class="item"><span class="label">UTI/dia:</span> ${formatCurrencyForPrint(budget.icu_daily_cost)}</div>` : ''}
-                ${budget.ward_daily_cost ? `<div class="item"><span class="label">Enfermaria/dia:</span> ${formatCurrencyForPrint(budget.ward_daily_cost)}</div>` : ''}
-                ${budget.room_daily_cost ? `<div class="item"><span class="label">Apartamento/dia:</span> ${formatCurrencyForPrint(budget.room_daily_cost)}</div>` : ''}
+                ${budget.icu_daily_cost ? `<div class="item"><span class="label">UTI (${request.icu_days || 0} dias x ${formatCurrency(budget.icu_daily_cost)}):</span> ${formatCurrency((budget.icu_daily_cost || 0) * (request.icu_days || 0))}</div>` : ''}
+                ${budget.ward_daily_cost ? `<div class="item"><span class="label">Enfermaria (${request.ward_days || 0} dias x ${formatCurrency(budget.ward_daily_cost)}):</span> ${formatCurrency((budget.ward_daily_cost || 0) * (request.ward_days || 0))}</div>` : ''}
+                ${budget.room_daily_cost ? `<div class="item"><span class="label">Apartamento (${request.room_days || 0} dias x ${formatCurrency(budget.room_daily_cost)}):</span> ${formatCurrency((budget.room_daily_cost || 0) * (request.room_days || 0))}</div>` : ''}
               </div>
               <div>
                 ${budget.anesthetist_fee ? `<div class="item"><span class="label">Anestesista:</span> ${formatCurrencyForPrint(budget.anesthetist_fee)}</div>` : ''}
@@ -247,6 +249,18 @@ export default function Budgets() {
             <div class="cost-breakdown">
               <div class="item"><span class="label">Subtotal:</span> ${formatCurrencyForPrint(subtotal)}</div>
               <div class="item"><span class="label">Taxa de Serviço (2%):</span> ${formatCurrencyForPrint(serviceFee)}</div>
+            </div>
+            ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
+              <h4 style="margin-top: 15px; color: #166534;">Materiais OPME:</h4>
+              ${budget.opme_quotes.map((opmeQuote: any) => {
+                const selectedQuote = opmeQuote.quotes?.find((q: any) => q.supplier_id === opmeQuote.selected_supplier_id);
+                if (!selectedQuote) return '';
+                return `<div class="item"><span class="label">${opmeQuote.opme_name || 'Material OPME'}:</span> ${formatCurrency(selectedQuote.price || 0)}</div>`;
+              }).join('')}
+            ` : ''}
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+              <div class="item"><span class="label">Subtotal:</span> ${formatCurrency(subtotal)}</div>
+              <div class="item"><span class="label">Taxa de Serviço (5%):</span> ${formatCurrency(serviceFee)}</div>
             </div>
           </div>
         `;
@@ -424,7 +438,7 @@ export default function Budgets() {
           ` : ''}
 
           <div class="total-section">
-            <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrencyForPrint(total)}</div>
+            <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrency(total)}</div>
           </div>
 
           ${budget.observations ? `

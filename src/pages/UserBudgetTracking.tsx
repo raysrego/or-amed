@@ -134,24 +134,37 @@ export default function UserBudgetTracking() {
     if (!request) return;
 
     const { total } = calculateBudgetTotal(budget);
+    const { subtotal, serviceFee } = calculateBudgetTotal(budget);
 
     // Função para renderizar custos detalhados ou simplificados
     const renderCostSection = () => {
       if (showUnitPrices) {
         return `
           <div class="section">
-            <h3>Detalhamento de Custos</h3>
+            <h3>Detalhamento de Custos Unitários</h3>
             <div class="grid">
               <div>
-                ${budget.icu_daily_cost ? `<div class="item"><span class="label">UTI/dia:</span> ${formatCurrency(budget.icu_daily_cost)}</div>` : ''}
-                ${budget.ward_daily_cost ? `<div class="item"><span class="label">Enfermaria/dia:</span> ${formatCurrency(budget.ward_daily_cost)}</div>` : ''}
-                ${budget.room_daily_cost ? `<div class="item"><span class="label">Apartamento/dia:</span> ${formatCurrency(budget.room_daily_cost)}</div>` : ''}
+                ${budget.icu_daily_cost ? `<div class="item"><span class="label">UTI (${request.icu_days || 0} dias x ${formatCurrency(budget.icu_daily_cost)}):</span> ${formatCurrency((budget.icu_daily_cost || 0) * (request.icu_days || 0))}</div>` : ''}
+                ${budget.ward_daily_cost ? `<div class="item"><span class="label">Enfermaria (${request.ward_days || 0} dias x ${formatCurrency(budget.ward_daily_cost)}):</span> ${formatCurrency((budget.ward_daily_cost || 0) * (request.ward_days || 0))}</div>` : ''}
+                ${budget.room_daily_cost ? `<div class="item"><span class="label">Apartamento (${request.room_days || 0} dias x ${formatCurrency(budget.room_daily_cost)}):</span> ${formatCurrency((budget.room_daily_cost || 0) * (request.room_days || 0))}</div>` : ''}
               </div>
               <div>
                 ${budget.anesthetist_fee ? `<div class="item"><span class="label">Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
                 <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
                 ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrency(budget.evoked_potential_fee)}</div>` : ''}
               </div>
+            </div>
+            ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
+              <h4 style="margin-top: 15px; color: #166534;">Materiais OPME:</h4>
+              ${budget.opme_quotes.map((opmeQuote: any) => {
+                const selectedQuote = opmeQuote.quotes?.find((q: any) => q.supplier_id === opmeQuote.selected_supplier_id);
+                if (!selectedQuote) return '';
+                return `<div class="item"><span class="label">${opmeQuote.opme_name || 'Material OPME'}:</span> ${formatCurrency(selectedQuote.price || 0)}</div>`;
+              }).join('')}
+            ` : ''}
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+              <div class="item"><span class="label">Subtotal:</span> ${formatCurrency(subtotal)}</div>
+              <div class="item"><span class="label">Taxa de Serviço (5%):</span> ${formatCurrency(serviceFee)}</div>
             </div>
           </div>
         `;

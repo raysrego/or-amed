@@ -554,9 +554,9 @@ export default function UserManagement() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Selecione um médico (opcional)</option>
-                      {doctors.map((doctor) => (
+                      {users.filter(u => u.role === 'doctor').map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} (CRM: {doctor.crm})
+                          Dr. {doctor.name} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>
                       ))}
                     </select>
