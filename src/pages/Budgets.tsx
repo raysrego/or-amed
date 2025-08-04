@@ -54,6 +54,8 @@ export default function Budgets() {
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [selectedSurgeryRequest, setSelectedSurgeryRequest] = useState<SurgeryRequest | null>(null);
   const [opmeQuotes, setOpmeQuotes] = useState<OPMEQuote[]>([]);
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  const [selectedBudgetForPrint, setSelectedBudgetForPrint] = useState<Budget | null>(null);
   const [formData, setFormData] = useState({
     surgery_request_id: '',
     hospital_id: '',
@@ -181,7 +183,7 @@ export default function Budgets() {
     });
   };
 
-  const printBudget = (budget: Budget) => {
+  const printBudget = (budget: Budget, showUnitPrices: boolean = false) => {
     const request = budget.surgery_request;
     if (!request) return;
 
@@ -209,6 +211,71 @@ export default function Budgets() {
       return labels[status as keyof typeof labels] || status;
     };
 
+    // Função para renderizar custos detalhados ou simplificados
+    const renderCostSection = () => {
+      if (showUnitPrices) {
+        return `
+          <div class="section">
+            <h3>Detalhamento de Custos</h3>
+            <div class="grid">
+              <div>
+                ${budget.icu_daily_cost ? `<div class="item"><span class="label">UTI/dia:</span> ${formatCurrencyForPrint(budget.icu_daily_cost)}</div>` : ''}
+                ${budget.ward_daily_cost ? `<div class="item"><span class="label">Enfermaria/dia:</span> ${formatCurrencyForPrint(budget.ward_daily_cost)}</div>` : ''}
+                ${budget.room_daily_cost ? `<div class="item"><span class="label">Apartamento/dia:</span> ${formatCurrencyForPrint(budget.room_daily_cost)}</div>` : ''}
+              </div>
+              <div>
+                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Anestesista:</span> ${formatCurrencyForPrint(budget.anesthetist_fee)}</div>` : ''}
+                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrencyForPrint(budget.doctor_fee)}</div>
+                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrencyForPrint(budget.evoked_potential_fee)}</div>` : ''}
+              </div>
+            </div>
+            
+            ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
+              <h4>Materiais OPME:</h4>
+              ${budget.opme_quotes.map((quote: any) => {
+                const opme = getOPMEDetails(quote.opme_id);
+                const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
+                return `
+                  <div class="item">
+                    <div><span class="label">Material:</span> ${opme?.name} - ${opme?.brand}</div>
+                    <div><span class="label">Valor:</span> ${selectedQuote ? formatCurrencyForPrint(selectedQuote.price) : 'Sem cotação'}</div>
+                  </div>
+                `;
+              }).join('')}
+            ` : ''}
+            
+            <div class="cost-breakdown">
+              <div class="item"><span class="label">Subtotal:</span> ${formatCurrencyForPrint(subtotal)}</div>
+              <div class="item"><span class="label">Taxa de Serviço (2%):</span> ${formatCurrencyForPrint(serviceFee)}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="section">
+            <h3>Custos de Internação</h3>
+            <div class="item"><span class="label">Custos Hospitalares:</span> Inclusos</div>
+            <div class="item"><span class="label">Honorários Médicos:</span> Inclusos</div>
+            <div class="item"><span class="label">Materiais e Equipamentos:</span> Inclusos</div>
+            ${request.evoked_potential ? `<div class="item"><span class="label">Potencial Evocado:</span> Incluso</div>` : ''}
+          </div>
+
+          ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
+            <div class="section">
+              <h3>Materiais OPME</h3>
+              ${budget.opme_quotes.map((quote: any) => {
+                const opme = getOPMEDetails(quote.opme_id);
+                return `
+                  <div class="item">
+                    <div><span class="label">Material:</span> ${opme?.name} - ${opme?.brand}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : ''}
+        `;
+      }
+    };
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -697,7 +764,10 @@ export default function Budgets() {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => printBudget(budget)}
+                    onClick={() => {
+                      setSelectedBudgetForPrint(budget);
+                      setShowPrintOptions(true);
+                    }}
                     className="text-green-600 hover:text-green-800"
                     title="Imprimir Orçamento"
                   >
@@ -840,6 +910,57 @@ export default function Budgets() {
         </div>
       )}
 
+      {/* Print Options Modal */}
+      {showPrintOptions && selectedBudgetForPrint && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Opções de Impressão</h2>
+              <p className="text-gray-600 mb-6">
+                Escolha como deseja imprimir o orçamento:
+              </p>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={() => {
+                    printBudget(selectedBudgetForPrint, false);
+                    setShowPrintOptions(false);
+                    setSelectedBudgetForPrint(null);
+                  }}
+                  className="w-full p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Versão Simplificada</div>
+                  <div className="text-sm text-gray-600">Sem valores unitários - apenas valor total</div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    printBudget(selectedBudgetForPrint, true);
+                    setShowPrintOptions(false);
+                    setSelectedBudgetForPrint(null);
+                  }}
+                  className="w-full p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Versão Detalhada</div>
+                  <div className="text-sm text-gray-600">Com todos os valores unitários</div>
+                </button>
+              </div>
+              
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowPrintOptions(false);
+                    setSelectedBudgetForPrint(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
