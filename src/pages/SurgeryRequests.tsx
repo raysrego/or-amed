@@ -216,6 +216,7 @@ export default function SurgeryRequests() {
             .opme-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
             .equipment-list { display: flex; flex-wrap: wrap; gap: 5px; }
             .equipment-tag { background: #e3f2fd; padding: 3px 8px; border-radius: 12px; font-size: 12px; }
+            .no-print { display: none; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -269,7 +270,7 @@ export default function SurgeryRequests() {
             <div class="section">
               <h3>Materiais OPME Solicitados</h3>
               ${opmeDetails.map(opme => `
-                <div class="opme-item">
+                <div class="item">
                   <div><span class="label">Material:</span> ${opme.name} - ${opme.brand}</div>
                   <div><span class="label">Quantidade:</span> ${opme.quantity}</div>
                   ${opme.description ? `<div><span class="label">Descrição:</span> ${opme.description}</div>` : ''}

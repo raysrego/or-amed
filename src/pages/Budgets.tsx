@@ -186,12 +186,6 @@ export default function Budgets() {
     if (!request) return;
 
     const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
-    const opmeTotal = budget.opme_quotes && Array.isArray(budget.opme_quotes) 
-      ? budget.opme_quotes.reduce((sum: number, quote: any) => {
-          const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
-          return sum + (selectedQuote?.price || 0);
-        }, 0)
-      : 0;
 
     const procedureNames = getProcedureNames(request.procedure_ids || []);
 
@@ -290,12 +284,10 @@ export default function Budgets() {
             .item { margin-bottom: 10px; }
             .label { font-weight: bold; }
             .total-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; }
-            .subtotal { font-size: 16px; margin-bottom: 8px; }
-            .service-fee { font-size: 16px; margin-bottom: 8px; color: #166534; }
             .total { font-size: 20px; font-weight: bold; border-top: 2px solid #166534; padding-top: 10px; }
-            .opme-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
             .procedure-list { list-style-type: disc; margin-left: 20px; }
             .observations { background: #f0f8ff; padding: 10px; border-left: 4px solid #166534; margin-top: 15px; }
+            .no-print { display: none; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -344,19 +336,10 @@ export default function Budgets() {
 
           <div class="section">
             <h3>Custos de Internação</h3>
-            <div class="grid">
-              <div>
-                ${budget.icu_daily_cost ? `<div class="item"><span class="label">Custos do Hospital:</span> ${formatCurrencyForPrint(budget.icu_daily_cost)}</div>` : ''}
-${budget.ward_daily_cost ? `<div class="item"><span class="label">Custos do Hospital somente Enfermaria):</span> ${formatCurrencyForPrint(budget.ward_daily_cost)}</div>` : ''}
-${budget.room_daily_cost ? `<div class="item"><span class="label">Custos do Hospital somente Apartamente):</span> ${formatCurrencyForPrint(budget.room_daily_cost)}</div>` : ''}
-
-              </div>
-              <div>
-                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrencyForPrint(budget.doctor_fee)}</div>
-                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Honorário Anestesista:</span> ${formatCurrencyForPrint(budget.anesthetist_fee)}</div>` : ''}
-                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrencyForPrint(budget.evoked_potential_fee)}</div>` : ''}
-              </div>
-            </div>
+            <div class="item"><span class="label">Custos Hospitalares:</span> Inclusos</div>
+            <div class="item"><span class="label">Honorários Médicos:</span> Inclusos</div>
+            <div class="item"><span class="label">Materiais e Equipamentos:</span> Inclusos</div>
+            ${request.evoked_potential ? `<div class="item"><span class="label">Potencial Evocado:</span> Incluso</div>` : ''}
           </div>
 
           ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
@@ -364,23 +347,16 @@ ${budget.room_daily_cost ? `<div class="item"><span class="label">Custos do Hosp
               <h3>Materiais OPME</h3>
               ${budget.opme_quotes.map((quote: any) => {
                 const opme = getOPMEDetails(quote.opme_id);
-                const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
-                const supplier = suppliers.find(s => s.id === quote.selected_supplier_id);
                 return `
-                  <div class="opme-item">
+                  <div class="item">
                     <div><span class="label">Material:</span> ${opme?.name} - ${opme?.brand}</div>
-                    <div><span class="label">Fornecedor:</span> ${supplier?.name}</div>
-                    <div><span class="label">Valor:</span> ${formatCurrencyForPrint(selectedQuote?.price || 0)}</div>
                   </div>
                 `;
               }).join('')}
-              <div class="item"><span class="label">Total OPME:</span> ${formatCurrencyForPrint(opmeTotal)}</div>
             </div>
           ` : ''}
 
           <div class="total-section">
-            <div class="subtotal"><span class="label">Subtotal:</span> ${formatCurrencyForPrint(subtotal)}</div>
-            <div class="service-fee"><span class="label">Taxa de Serviço (2%):</span> ${formatCurrencyForPrint(serviceFee)}</div>
             <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrencyForPrint(total)}</div>
           </div>
 

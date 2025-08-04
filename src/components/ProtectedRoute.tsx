@@ -7,9 +7,19 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
   roles?: string[];
+  allowCreate?: boolean;
+  allowEdit?: boolean;
+  allowDelete?: boolean;
 }
 
-export default function ProtectedRoute({ children, adminOnly, roles }: ProtectedRouteProps) {
+export default function ProtectedRoute({ 
+  children, 
+  adminOnly, 
+  roles,
+  allowCreate = true,
+  allowEdit = true,
+  allowDelete = true
+}: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile();
 
@@ -32,7 +42,7 @@ export default function ProtectedRoute({ children, adminOnly, roles }: Protected
   if (profile) {
     // Admin can access everything
     if (profile.is_admin) {
-      return <>{children}</>;
+      return <div data-user-permissions="admin,create,edit,delete">{children}</div>;
     }
     
     // Check admin-only routes
@@ -58,6 +68,22 @@ export default function ProtectedRoute({ children, adminOnly, roles }: Protected
         </div>
       );
     }
+    
+    // Pass user permissions as context
+    const userPermissions = {
+      canCreate: allowCreate && (profile.is_admin || (roles && roles.includes(profile.role))),
+      canEdit: allowEdit && (profile.is_admin || (roles && roles.includes(profile.role))),
+      canDelete: allowDelete && profile.is_admin, // Only admin can delete
+      isAdmin: profile.is_admin,
+      role: profile.role
+    };
+    
+    return (
+      <div data-user-permissions={JSON.stringify(userPermissions)}>
+        {children}
+      </div>
+    );
   }
+  
   return <>{children}</>;
 }

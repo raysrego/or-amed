@@ -156,6 +156,7 @@ export default function UserSurgeryRequest() {
             .urgency-urgent { color: #dc2626; font-weight: bold; text-transform: uppercase; }
             .urgency-medium { color: #f59e0b; font-weight: bold; }
             .urgency-low { color: #10b981; font-weight: bold; }
+            .no-print { display: none; }
             @media print { body { margin: 0; } }
           </style>
         </head>

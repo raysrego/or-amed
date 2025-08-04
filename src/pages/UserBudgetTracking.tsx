@@ -131,7 +131,7 @@ export default function UserBudgetTracking() {
     const request = budget.surgery_request;
     if (!request) return;
 
-    const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
+    const { total } = calculateBudgetTotal(budget);
 
     const printContent = `
       <!DOCTYPE html>
@@ -168,8 +168,6 @@ export default function UserBudgetTracking() {
             .item { margin-bottom: 10px; }
             .label { font-weight: bold; }
             .total-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; }
-            .subtotal { font-size: 16px; margin-bottom: 8px; }
-            .service-fee { font-size: 16px; margin-bottom: 8px; color: #166534; }
             .total { font-size: 20px; font-weight: bold; border-top: 2px solid #166534; padding-top: 10px; }
             @media print { body { margin: 0; } }
           </style>
@@ -210,23 +208,13 @@ export default function UserBudgetTracking() {
 
           <div class="section">
             <h3>Custos de Internação</h3>
-            <div class="grid">
-              <div>
-                ${request.icu_days ? `<div class="item"><span class="label">UTI (${request.icu_days} diárias):</span> ${formatCurrency((budget.icu_daily_cost || 0) * request.icu_days)}</div>` : ''}
-                ${request.ward_days ? `<div class="item"><span class="label">Enfermaria (${request.ward_days} diárias):</span> ${formatCurrency((budget.ward_daily_cost || 0) * request.ward_days)}</div>` : ''}
-                ${request.room_days ? `<div class="item"><span class="label">Apartamento (${request.room_days} diárias):</span> ${formatCurrency((budget.room_daily_cost || 0) * request.room_days)}</div>` : ''}
-              </div>
-              <div>
-                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
-                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Honorário Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
-                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrency(budget.evoked_potential_fee)}</div>` : ''}
-              </div>
-            </div>
+            <div class="item"><span class="label">Custos Hospitalares:</span> Inclusos</div>
+            <div class="item"><span class="label">Honorários Médicos:</span> Inclusos</div>
+            <div class="item"><span class="label">Materiais e Equipamentos:</span> Inclusos</div>
+            ${request.evoked_potential ? `<div class="item"><span class="label">Potencial Evocado:</span> Incluso</div>` : ''}
           </div>
 
           <div class="total-section">
-            <div class="subtotal"><span class="label">Subtotal:</span> ${formatCurrency(subtotal)}</div>
-            <div class="service-fee"><span class="label">Taxa de Serviço (5%):</span> ${formatCurrency(serviceFee)}</div>
             <div class="total"><span class="label">VALOR TOTAL:</span> ${formatCurrency(total)}</div>
           </div>
 

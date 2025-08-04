@@ -80,9 +80,8 @@ export default function UserManagement() {
   const fetchDoctors = async () => {
     try {
       const result = await supabase
-        .from('user_profiles')
+        .from('doctors')
         .select('*')
-        .eq('role', 'doctor')
         .order('name');
 
       if (result.error) {
@@ -104,6 +103,7 @@ export default function UserManagement() {
         const profileData = {
           name: formData.name,
           role: formData.role,
+          old_role: formData.role, // Ensure old_role is set
           crm: formData.role === 'doctor' ? formData.crm : null,
           specialty: formData.role === 'doctor' ? formData.specialty : null,
           doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
@@ -151,6 +151,7 @@ export default function UserManagement() {
           email: formData.email.trim(),
           name: formData.name,
           role: formData.role,
+          old_role: formData.role, // Ensure old_role is set
           crm: formData.role === 'doctor' ? formData.crm : null,
           specialty: formData.role === 'doctor' ? formData.specialty : null,
           doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
@@ -555,7 +556,7 @@ export default function UserManagement() {
                       <option value="">Selecione um médico (opcional)</option>
                       {doctors.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} - {doctor.specialty} (CRM: {doctor.crm})
+                          Dr. {doctor.name} (CRM: {doctor.crm})
                         </option>
                       ))}
                     </select>

@@ -66,6 +66,7 @@ export default function Register() {
             email: email.trim(),
             name: name,
             role: role,
+            old_role: role, // Ensure old_role is set
             crm: role === 'doctor' ? crm : null,
             specialty: role === 'doctor' ? specialty : null,
             doctor_id: null,
@@ -87,6 +88,7 @@ export default function Register() {
                   email: email.trim(),
                   name: name,
                   role: role,
+                  old_role: role, // Ensure old_role is set
                   crm: role === 'doctor' ? crm : null,
                   specialty: role === 'doctor' ? specialty : null,
                 })

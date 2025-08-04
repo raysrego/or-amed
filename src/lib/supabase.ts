@@ -188,3 +188,18 @@ export interface AuditLog {
   details: any;
   created_at: string;
 }
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  old_role: string;
+  role: 'doctor' | 'secretary' | 'admin';
+  crm?: string;
+  specialty?: string;
+  doctor_id?: string;
+  is_admin?: boolean;
+  email?: string;
+  doctor?: UserProfile;
+  created_at: string;
+}
