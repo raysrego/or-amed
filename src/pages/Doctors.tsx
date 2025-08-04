@@ -14,6 +14,8 @@ export default function Doctors() {
     crm: '',
     contact: '',
     pix_key: '',
+    email: '',
+    specialty: '',
   });
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function Doctors() {
       if (error) throw error;
       setDoctors(data || []);
     } catch (error) {
-      console.error('Error fetching doctors:', error);
+      console.error('Erro ao buscar médicos:', error);
     } finally {
       setLoading(false);
     }
@@ -38,7 +40,7 @@ export default function Doctors() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (editingDoctor) {
         const { error } = await supabase
@@ -70,6 +72,8 @@ export default function Doctors() {
       crm: doctor.crm,
       contact: doctor.contact,
       pix_key: doctor.pix_key,
+      email: doctor.email || '',
+      specialty: doctor.specialty || '',
     });
     setShowModal(true);
   };
@@ -82,7 +86,7 @@ export default function Doctors() {
         .from('doctors')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
       fetchDoctors();
     } catch (error: any) {
@@ -97,6 +101,8 @@ export default function Doctors() {
       crm: '',
       contact: '',
       pix_key: '',
+      email: '',
+      specialty: '',
     });
   };
 
@@ -131,7 +137,6 @@ export default function Doctors() {
         </button>
       </div>
 
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
         <input
@@ -143,7 +148,6 @@ export default function Doctors() {
         />
       </div>
 
-      {/* Doctors Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDoctors.map((doctor) => (
           <div key={doctor.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -185,6 +189,16 @@ export default function Doctors() {
                 <CreditCard className="h-4 w-4 mr-2" />
                 <span className="truncate">PIX: {doctor.pix_key}</span>
               </div>
+              {doctor.email && (
+                <div className="text-gray-600">
+                  <strong>Email:</strong> {doctor.email}
+                </div>
+              )}
+              {doctor.specialty && (
+                <div className="text-gray-600">
+                  <strong>Especialidade:</strong> {doctor.specialty}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -197,7 +211,6 @@ export default function Doctors() {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -205,7 +218,7 @@ export default function Doctors() {
               <h2 className="text-xl font-semibold mb-4">
                 {editingDoctor ? 'Editar Médico' : 'Novo Médico'}
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -220,7 +233,7 @@ export default function Doctors() {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       CPF *
@@ -252,7 +265,7 @@ export default function Doctors() {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Contato *
@@ -280,6 +293,34 @@ export default function Doctors() {
                     placeholder="CPF, email, telefone ou chave aleatória"
                     required
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      E-mail
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Especialidade
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.specialty}
+                      onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ex: Cardiologia"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
