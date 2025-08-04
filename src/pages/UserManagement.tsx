@@ -57,7 +57,7 @@ export default function UserManagement() {
     try {
       const result = await supabase
         .from('doctors')
-        .select('id, name, crm, contact')
+        .select('id, name, crm, contact, specialty')
         .order('name');
 
       if (result.error) {
@@ -552,7 +552,7 @@ export default function UserManagement() {
                       <option value="">Selecione um médico (opcional)</option>
                       {doctors.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} {doctor.crm ? `- CRM: ${doctor.crm}` : ''}
+                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} (CRM: {doctor.crm})
                         </option>
                       ))}
                     </select>

@@ -99,6 +99,9 @@ export interface Doctor {
   crm: string;
   contact: string;
   pix_key: string;
+  specialty?: string;
+  user_id?: string;
+  email?: string;
   created_at: string;
 }
 
