@@ -128,39 +128,14 @@ export default function UserManagement() {
     
     console.log('Creating user with data:', formData);
 
-    // Primeiro criar o usuário na tabela doctors se for médico
-    let doctorId = null;
-    if (formData.role === 'doctor') {
-      const { data: doctorData, error: doctorError } = await supabase
-        .from('doctors')
-        .insert([{
-          name: formData.name.trim(),
-          cpf: '00000000000', // CPF temporário - pode ser editado depois
-          crm: formData.crm.trim(),
-          contact: 'Não informado', // Contato temporário
-          pix_key: 'Não informado', // PIX temporário
-          email: formData.email.trim()
-        }])
-        .select()
-        .single();
-
-      if (doctorError) {
-        console.error('Error creating doctor:', doctorError);
-        throw new Error('Erro ao criar médico: ' + doctorError.message);
-      }
-      
-      doctorId = doctorData.id;
-      console.log('Doctor created with ID:', doctorId);
-    }
-    
     // Criar perfil de usuário
     const profileData = {
       email: formData.email.trim(),
       name: formData.name.trim(),
       role: formData.role,
-      crm: formData.role === 'doctor' ? formData.crm?.trim() : null,
-      specialty: formData.role === 'doctor' ? formData.specialty?.trim() : null,
-      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : doctorId,
+      crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
+      specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
+      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
       is_admin: false,
     };
 
