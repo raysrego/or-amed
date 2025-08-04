@@ -9,7 +9,7 @@ export default function UserManagement() {
   const { user } = useAuth();
   const { profile: currentUserProfile, loading: profileLoading } = useUserProfile();
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [doctors, setDoctors] = useState<UserProfile[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -56,15 +56,16 @@ export default function UserManagement() {
   const fetchDoctors = async () => {
     try {
       const result = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('role', 'doctor')
+        .from('doctors')
+        .select('id, name, crm, contact')
         .order('name');
 
       if (result.error) {
+        console.error('Error fetching doctors:', result.error);
         throw result.error;
       }
 
+      console.log('Doctors fetched:', result.data);
       setDoctors(result.data || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
@@ -125,39 +126,59 @@ export default function UserManagement() {
       if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória para médicos');
     }
     
-    // Verificar se email já existe
-    const { data: existingUser } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('email', formData.email.trim())
-      .single();
-    
-    if (existingUser) {
-      throw new Error('Este email já está cadastrado');
+    console.log('Creating user with data:', formData);
+
+    // Primeiro criar o usuário na tabela doctors se for médico
+    let doctorId = null;
+    if (formData.role === 'doctor') {
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .insert([{
+          name: formData.name.trim(),
+          cpf: '00000000000', // CPF temporário - pode ser editado depois
+          crm: formData.crm.trim(),
+          contact: 'Não informado', // Contato temporário
+          pix_key: 'Não informado', // PIX temporário
+          email: formData.email.trim()
+        }])
+        .select()
+        .single();
+
+      if (doctorError) {
+        console.error('Error creating doctor:', doctorError);
+        throw new Error('Erro ao criar médico: ' + doctorError.message);
+      }
+      
+      doctorId = doctorData.id;
+      console.log('Doctor created with ID:', doctorId);
     }
     
-    // Criar perfil
+    // Criar perfil de usuário
     const profileData = {
       email: formData.email.trim(),
       name: formData.name.trim(),
       role: formData.role,
       crm: formData.role === 'doctor' ? formData.crm?.trim() : null,
       specialty: formData.role === 'doctor' ? formData.specialty?.trim() : null,
-      doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : doctorId,
       is_admin: false,
     };
+
+    console.log('Creating profile with data:', profileData);
 
     const { error: profileError } = await supabase
       .from('user_profiles')
       .insert([profileData]);
 
     if (profileError) {
+      console.error('Error creating profile:', profileError);
       if (profileError.message.includes('duplicate key')) {
         throw new Error('Este email já está cadastrado');
       }
       throw new Error('Erro ao criar usuário: ' + profileError.message);
     }
 
+    console.log('User profile created successfully');
     alert('Usuário criado com sucesso!');
   };
 
@@ -531,7 +552,7 @@ export default function UserManagement() {
                       <option value="">Selecione um médico (opcional)</option>
                       {doctors.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
+                          Dr. {doctor.name} {doctor.crm ? `- CRM: ${doctor.crm}` : ''}
                         </option>
                       ))}
                     </select>
