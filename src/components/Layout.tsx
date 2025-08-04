@@ -67,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/user-profile', icon: User, label: 'Meu Perfil', exact: true },
     { path: '/user-surgery-requests', icon: ClipboardList, label: 'Meus Pedidos', roles: ['doctor', 'secretary'] },
     { path: '/user-budget-tracking', icon: TrendingUp, label: 'Meus Orçamentos', roles: ['doctor', 'secretary'] },
-    { path: '/user-management', icon: Settings, label: 'Gerenciar Usuários', adminOnly: true },
+    { path: '/user-management', icon: Settings, label: 'Usuários', adminOnly: true },
   ];
 
   const canAccessItem = (item: NavItem) => {

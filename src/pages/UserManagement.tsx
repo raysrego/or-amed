@@ -14,6 +14,7 @@ export default function UserManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -97,129 +98,164 @@ export default function UserManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setLoading(true);
+    
     try {
-      if (editingUser) {
-        // Update existing user profile
-        const profileData = {
-          name: formData.name,
-          role: formData.role,
-          crm: formData.role === 'doctor' ? formData.crm : null,
-          specialty: formData.role === 'doctor' ? formData.specialty : null,
-          doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
-        };
-
-        const result = await supabase
-          .from('user_profiles')
-          .update(profileData)
-          .eq('id', editingUser.id);
-        
-        if (result.error) throw result.error;
-      } else {
-        // Create new user
-        // Validate required fields first
-        if (!formData.email || !formData.name) {
-          throw new Error('Email e nome são obrigatórios');
-        }
-        
-        if (formData.role === 'doctor' && (!formData.crm || !formData.specialty)) {
-          throw new Error('CRM e especialidade são obrigatórios para médicos');
-        }
-        
-        // Generate default password: first name + "123"
-        const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
-        
-        // Step 1: Create auth user
-        const authResult = await supabase.auth.signUp({
-          email: formData.email.trim(),
-          password: formData.password || defaultPassword,
-          options: {
-            emailRedirectTo: undefined // Disable email confirmation
-          }
-        });
-
-        if (authResult.error) {
-          // Handle auth-specific errors
-          if (authResult.error.message.includes('User already registered')) {
-            throw new Error('Este email já está cadastrado no sistema');
-          } else if (authResult.error.message.includes('Invalid email')) {
-            throw new Error('Email inválido. Verifique o formato');
-          } else if (authResult.error.message.includes('Password should be at least')) {
-            throw new Error('A senha deve ter pelo menos 6 caracteres');
-          } else {
-            throw new Error(`Erro na autenticação: ${authResult.error.message}`);
-          }
-        }
-
-        if (!authResult.data.user) {
-          throw new Error('Falha na criação do usuário de autenticação');
-        }
-
-
-        // Step 2: Wait for the user to be fully created
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Step 3: Create user profile using safe function
-        const { data: profileData, error: profileError } = await supabase.rpc(
-          'create_user_profile_safe',
-          {
-            p_user_id: authResult.data.user.id,
-            p_email: formData.email.trim(),
-            p_name: formData.name,
-            p_role: formData.role,
-            p_crm: formData.role === 'doctor' ? formData.crm : null,
-            p_specialty: formData.role === 'doctor' ? formData.specialty : null,
-            p_doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
-          }
-        );
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          
-          // If profile creation fails, try to clean up the auth user
-          try {
-            await supabase.auth.admin.deleteUser(authResult.data.user.id);
-          } catch (cleanupError) {
-            console.error('Failed to cleanup auth user:', cleanupError);
-          }
-          
-          // Use our error parsing function for better messages
-          const { data: friendlyError } = await supabase.rpc('get_user_creation_error', {
-            error_message: profileError.message
-          });
-          
-          throw new Error(friendlyError || profileError.message);
-        }
-
-        // Show the generated password to admin
-        if (!formData.password) {
-          alert(`Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`);
-        } else {
-          alert('Usuário criado com sucesso!');
-        }
-      }
+      await handleUserOperation();
 
       setShowModal(false);
       setEditingUser(null);
       resetForm();
       fetchUsers();
-      if (editingUser) {
-        alert('Usuário atualizado com sucesso!');
-      }
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
-      
-      // Show user-friendly error messages
-      let errorMessage = error.message;
-      
-      // Additional error parsing for common issues
-      if (errorMessage.includes('Failed to fetch')) {
-        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente';
-      } else if (errorMessage.includes('JWT')) {
-        errorMessage = 'Sessão expirada. Faça login novamente';
-      }
-      
-      alert(errorMessage);
+      alert(parseErrorMessage(error.message));
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleUserOperation = async () => {
+    if (editingUser) {
+      await updateExistingUser();
+    } else {
+      await createNewUser();
+    }
+  };
+
+  const updateExistingUser = async () => {
+    const profileData = {
+      name: formData.name,
+      role: formData.role,
+      crm: formData.role === 'doctor' ? formData.crm : null,
+      specialty: formData.role === 'doctor' ? formData.specialty : null,
+      doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+    };
+
+    const result = await supabase
+      .from('user_profiles')
+      .update(profileData)
+      .eq('id', editingUser.id);
+    
+    if (result.error) throw result.error;
+    alert('Usuário atualizado com sucesso!');
+  };
+
+  const createNewUser = async () => {
+    // Validate required fields
+    validateUserData();
+    
+    const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
+    
+    // Create auth user with admin privileges
+    const { data: { user }, error: authError } = await supabase.auth.admin.createUser({
+      email: formData.email.trim(),
+      password: formData.password || defaultPassword,
+      email_confirm: true, // Skip email confirmation
+      user_metadata: {
+        name: formData.name,
+        role: formData.role
+      }
+    });
+
+    if (authError) {
+      throw new Error(parseAuthError(authError.message));
+    }
+
+    if (!user) {
+      throw new Error('Falha na criação do usuário de autenticação');
+    }
+
+    // Create user profile
+    await createUserProfile(user.id, defaultPassword);
+  };
+
+  const validateUserData = () => {
+    if (!formData.email?.trim()) {
+      throw new Error('Email é obrigatório');
+    }
+    if (!formData.name?.trim()) {
+      throw new Error('Nome é obrigatório');
+    }
+    if (formData.role === 'doctor') {
+      if (!formData.crm?.trim()) {
+        throw new Error('CRM é obrigatório para médicos');
+      }
+      if (!formData.specialty?.trim()) {
+        throw new Error('Especialidade é obrigatória para médicos');
+      }
+    }
+  };
+
+  const createUserProfile = async (userId: string, defaultPassword: string) => {
+    const profileData = {
+      user_id: userId,
+      email: formData.email.trim(),
+      name: formData.name.trim(),
+      role: formData.role,
+      old_role: formData.role,
+      crm: formData.role === 'doctor' ? formData.crm?.trim() : null,
+      specialty: formData.role === 'doctor' ? formData.specialty?.trim() : null,
+      doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
+      is_admin: false,
+    };
+
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .insert([profileData]);
+
+    if (profileError) {
+      // Cleanup auth user if profile creation fails
+      try {
+        await supabase.auth.admin.deleteUser(userId);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup auth user:', cleanupError);
+      }
+      throw new Error(parseProfileError(profileError.message));
+    }
+
+    // Show success message with password
+    const passwordMessage = formData.password 
+      ? 'Usuário criado com sucesso!' 
+      : `Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`;
+    
+    alert(passwordMessage);
+  };
+
+  const parseAuthError = (message: string): string => {
+    if (message.includes('User already registered')) {
+      return 'Este email já está cadastrado no sistema';
+    }
+    if (message.includes('Invalid email')) {
+      return 'Email inválido. Verifique o formato';
+    }
+    if (message.includes('Password should be at least')) {
+      return 'A senha deve ter pelo menos 6 caracteres';
+    }
+    return `Erro na autenticação: ${message}`;
+  };
+
+  const parseProfileError = (message: string): string => {
+    if (message.includes('duplicate key')) {
+      return 'Este email já está cadastrado no sistema';
+    }
+    if (message.includes('violates not-null constraint')) {
+      return 'Todos os campos obrigatórios devem ser preenchidos';
+    }
+    if (message.includes('violates foreign key constraint')) {
+      return 'Médico selecionado não encontrado';
+    }
+    return `Erro ao criar perfil: ${message}`;
+  };
+
+  const parseErrorMessage = (message: string): string => {
+    if (message.includes('Failed to fetch')) {
+      return 'Erro de conexão. Verifique sua internet e tente novamente';
+    }
+    if (message.includes('JWT')) {
+      return 'Sessão expirada. Faça login novamente';
+    }
+    return message;
   };
 
   const handleEdit = (userProfile: UserProfile) => {
@@ -604,9 +640,10 @@ export default function UserManagement() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading}
                   >
-                    {editingUser ? 'Atualizar' : 'Criar Usuário'}
+                    {loading ? 'Processando...' : (editingUser ? 'Atualizar' : 'Criar Usuário')}
                   </button>
                 </div>
               </form>
