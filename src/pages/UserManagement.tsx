@@ -119,10 +119,13 @@ export default function UserManagement() {
         // Create new user
         console.log('Creating new user with email:', formData.email);
         
+        // Generate default password: first name + "123"
+        const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
+        
         // Step 1: Create auth user
         const authResult = await supabase.auth.signUp({
           email: formData.email.trim(),
-          password: formData.password,
+          password: formData.password || defaultPassword,
           options: {
             emailRedirectTo: undefined // Disable email confirmation
           }
@@ -174,13 +177,20 @@ export default function UserManagement() {
         }
 
         console.log('Profile created successfully');
+        
+        // Show the generated password to admin
+        if (!formData.password) {
+          alert(`Usuário criado com sucesso!\nSenha padrão gerada: ${defaultPassword}\nInforme esta senha ao usuário.`);
+        }
       }
 
       setShowModal(false);
       setEditingUser(null);
       resetForm();
       fetchUsers();
-      alert(editingUser ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
+      if (editingUser) {
+        alert('Usuário atualizado com sucesso!');
+      }
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
       alert(`Erro: ${error.message || 'Erro desconhecido ao salvar usuário'}`);
@@ -401,7 +411,7 @@ export default function UserManagement() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Senha *
+                        Senha {!editingUser && '(deixe vazio para gerar automaticamente)'}
                       </label>
                       <div className="relative">
                         <input
@@ -409,9 +419,9 @@ export default function UserManagement() {
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder={!editingUser ? "Deixe vazio para gerar automaticamente" : "Mínimo 6 caracteres"}
                           minLength={6}
-                          required
+                          required={!!editingUser}
                         />
                         <button
                           type="button"
@@ -421,6 +431,11 @@ export default function UserManagement() {
                           {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
+                      {!editingUser && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Se não informar uma senha, será gerada automaticamente: [primeiro nome]123
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

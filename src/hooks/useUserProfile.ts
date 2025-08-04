@@ -42,6 +42,7 @@ export function useUserProfile() {
   const isAdmin = () => profile?.is_admin === true;
   const isDoctor = () => profile?.role === 'doctor';
   const isSecretary = () => profile?.role === 'secretary';
+  const hasRole = (roles: string[]) => profile?.role ? roles.includes(profile.role) : false;
 
   return {
     profile,
@@ -49,6 +50,7 @@ export function useUserProfile() {
     isAdmin,
     isDoctor,
     isSecretary,
+    hasRole,
     refetch: fetchProfile,
   };
 }

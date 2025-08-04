@@ -38,21 +38,69 @@ function App() {
                     
                     {/* User Module Routes */}
                     <Route path="/user-profile" element={<UserProfile />} />
-                    <Route path="/user-surgery-requests" element={<UserSurgeryRequest />} />
-                    <Route path="/user-budget-tracking" element={<UserBudgetTracking />} />
+                    <Route path="/user-surgery-requests" element={
+                      <ProtectedRoute roles={['doctor', 'secretary']}>
+                        <UserSurgeryRequest />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/user-budget-tracking" element={
+                      <ProtectedRoute roles={['doctor', 'secretary']}>
+                        <UserBudgetTracking />
+                      </ProtectedRoute>
+                    } />
                     
-                    {/* Admin Routes - Now available to all users */}
-                    <Route path="/patients" element={<Patients />} />
-                    <Route path="/doctors" element={<Doctors />} />
-                    <Route path="/procedures" element={<Procedures />} />
-                    <Route path="/anesthesia-types" element={<AnesthesiaTypes />} />
-                    <Route path="/hospitals" element={<Hospitals />} />
-                    <Route path="/suppliers" element={<Suppliers />} />
-                    <Route path="/opmes" element={<OPMEs />} />
-                    <Route path="/surgery-requests" element={<SurgeryRequests />} />
-                    <Route path="/budgets" element={<Budgets />} />
+                    {/* System Routes with Role-based Access */}
+                    <Route path="/patients" element={
+                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                        <Patients />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/doctors" element={
+                      <ProtectedRoute adminOnly>
+                        <Doctors />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/procedures" element={
+                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                        <Procedures />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/anesthesia-types" element={
+                      <ProtectedRoute adminOnly>
+                        <AnesthesiaTypes />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/hospitals" element={
+                      <ProtectedRoute adminOnly>
+                        <Hospitals />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/suppliers" element={
+                      <ProtectedRoute adminOnly>
+                        <Suppliers />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/opmes" element={
+                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                        <OPMEs />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/surgery-requests" element={
+                      <ProtectedRoute roles={['admin', 'doctor', 'secretary']}>
+                        <SurgeryRequests />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/budgets" element={
+                      <ProtectedRoute adminOnly>
+                        <Budgets />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/audit-logs" element={<div>Logs de Auditoria em desenvolvimento</div>} />
-                    <Route path="/user-management" element={<UserManagement />} />
+                    <Route path="/user-management" element={
+                      <ProtectedRoute adminOnly>
+                        <UserManagement />
+                      </ProtectedRoute>
+                    } />
                     
                     {/* Redirect unknown routes to dashboard */}
                     <Route path="*" element={<Navigate to="/" replace />} />

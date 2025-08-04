@@ -122,6 +122,14 @@ export default function Login() {
                 Cadastre-se
               </Link>
             </p>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <strong>Usuários do sistema:</strong> Use as credenciais fornecidas pelo administrador.
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Senha padrão: [primeiro nome]123
+              </p>
+            </div>
           </div>
         </div>
       </div>

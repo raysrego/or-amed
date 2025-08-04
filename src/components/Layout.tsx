@@ -22,6 +22,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../hooks/useUserProfile';
 import PulseCalculatorLogo from './PulseCalculatorLogo';
 
+interface NavItem {
+  path: string;
+  icon: any;
+  label: string;
+  exact?: boolean;
+  adminOnly?: boolean;
+  roles?: string[];
+}
+
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -40,26 +49,46 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const allNavItems = [
+  const allNavItems: NavItem[] = [
     { path: '/', icon: Activity, label: 'Dashboard', exact: true },
-    { path: '/patients', icon: Users, label: 'Pacientes' },
-    { path: '/doctors', icon: UserCheck, label: 'Médicos' },
-    { path: '/procedures', icon: Scissors, label: 'Procedimentos' },
-    { path: '/anesthesia-types', icon: Heart, label: 'Tipos de Anestesia' },
-    { path: '/hospitals', icon: Building2, label: 'Hospitais' },
-    { path: '/suppliers', icon: Truck, label: 'Fornecedores' },
-    { path: '/opmes', icon: ShoppingCart, label: 'OPMEs' },
-    { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia' },
-    { path: '/budgets', icon: Calculator, label: 'Orçamentos' },
-    { path: '/audit-logs', icon: History, label: 'Logs de Auditoria' },
+    { path: '/patients', icon: Users, label: 'Pacientes', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/doctors', icon: UserCheck, label: 'Médicos', adminOnly: true },
+    { path: '/procedures', icon: Scissors, label: 'Procedimentos', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/anesthesia-types', icon: Heart, label: 'Tipos de Anestesia', adminOnly: true },
+    { path: '/hospitals', icon: Building2, label: 'Hospitais', adminOnly: true },
+    { path: '/suppliers', icon: Truck, label: 'Fornecedores', adminOnly: true },
+    { path: '/opmes', icon: ShoppingCart, label: 'OPMEs', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/surgery-requests', icon: FileText, label: 'Pedidos de Cirurgia', roles: ['admin', 'doctor', 'secretary'] },
+    { path: '/budgets', icon: Calculator, label: 'Orçamentos', adminOnly: true },
+    { path: '/audit-logs', icon: History, label: 'Logs de Auditoria', adminOnly: true },
   ];
 
-  const userNavItems = [
+  const userNavItems: NavItem[] = [
     { path: '/user-profile', icon: User, label: 'Meu Perfil', exact: true },
-    { path: '/user-surgery-requests', icon: ClipboardList, label: 'Meus Pedidos' },
-    { path: '/user-budget-tracking', icon: TrendingUp, label: 'Meus Orçamentos' },
-    { path: '/user-management', icon: Settings, label: 'Gerenciar Usuários' },
+    { path: '/user-surgery-requests', icon: ClipboardList, label: 'Meus Pedidos', roles: ['doctor', 'secretary'] },
+    { path: '/user-budget-tracking', icon: TrendingUp, label: 'Meus Orçamentos', roles: ['doctor', 'secretary'] },
+    { path: '/user-management', icon: Settings, label: 'Gerenciar Usuários', adminOnly: true },
   ];
+
+  const canAccessItem = (item: NavItem) => {
+    if (!profile) return false;
+    
+    // Admin can access everything
+    if (profile.is_admin) return true;
+    
+    // Check admin-only items
+    if (item.adminOnly) return false;
+    
+    // Check role-based access
+    if (item.roles) {
+      return item.roles.includes(profile.role);
+    }
+    
+    return true;
+  };
+
+  const filteredMainItems = allNavItems.filter(canAccessItem);
+  const filteredUserItems = userNavItems.filter(canAccessItem);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -86,7 +115,7 @@ export default function Layout({ children }: LayoutProps) {
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Sistema Principal
               </h3>
-              {allNavItems.map((item) => (
+              {filteredMainItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -110,7 +139,7 @@ export default function Layout({ children }: LayoutProps) {
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Área Pessoal
               </h3>
-              {userNavItems.map((item) => (
+              {filteredUserItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
