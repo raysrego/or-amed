@@ -56,16 +56,15 @@ export default function UserManagement() {
   const fetchDoctors = async () => {
     try {
       const result = await supabase
-        .from('doctors')
-        .select('id, name, crm, contact, specialty')
+        .from('user_profiles')
+        .select('id, name, crm, specialty')
+        .eq('role', 'doctor')
         .order('name');
 
       if (result.error) {
-        console.error('Error fetching doctors:', result.error);
         throw result.error;
       }
 
-      console.log('Doctors fetched:', result.data);
       setDoctors(result.data || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
@@ -126,9 +125,17 @@ export default function UserManagement() {
       if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória para médicos');
     }
     
-    console.log('Creating user with data:', formData);
+    // Verificar se email já existe
+    const { data: existingUser } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', formData.email.trim())
+      .single();
 
-    // Criar perfil de usuário
+    if (existingUser) {
+      throw new Error('Este email já está cadastrado');
+    }
+
     const profileData = {
       email: formData.email.trim(),
       name: formData.name.trim(),
@@ -139,21 +146,36 @@ export default function UserManagement() {
       is_admin: false,
     };
 
-    console.log('Creating profile with data:', profileData);
-
     const { error: profileError } = await supabase
       .from('user_profiles')
       .insert([profileData]);
 
     if (profileError) {
-      console.error('Error creating profile:', profileError);
-      if (profileError.message.includes('duplicate key')) {
-        throw new Error('Este email já está cadastrado');
-      }
       throw new Error('Erro ao criar usuário: ' + profileError.message);
     }
 
-    console.log('User profile created successfully');
+    // Se for médico, criar também na tabela doctors
+    if (formData.role === 'doctor') {
+      const doctorData = {
+        name: formData.name.trim(),
+        cpf: '00000000000', // CPF temporário - deve ser atualizado depois
+        crm: formData.crm?.trim() || '',
+        contact: 'Não informado', // Contato temporário
+        pix_key: 'Não informado', // PIX temporário
+        specialty: formData.specialty?.trim() || '',
+        email: formData.email.trim(),
+      };
+
+      const { error: doctorError } = await supabase
+        .from('doctors')
+        .insert([doctorData]);
+
+      if (doctorError) {
+        console.warn('Erro ao criar na tabela doctors:', doctorError.message);
+        // Não falha a operação, apenas avisa
+      }
+    }
+
     alert('Usuário criado com sucesso!');
   };
 
@@ -383,7 +405,7 @@ export default function UserManagement() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Senha {!editingUser && '(deixe vazio para gerar automaticamente)'}
+                        Senha (opcional)
                       </label>
                       <div className="relative">
                         <input
@@ -391,9 +413,7 @@ export default function UserManagement() {
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
-                          placeholder={!editingUser ? "Deixe vazio para gerar automaticamente" : "Mínimo 6 caracteres"}
-                          minLength={6}
-                          required={!!editingUser}
+                          placeholder="Deixe vazio para não definir senha"
                         />
                         <button
                           type="button"
@@ -403,11 +423,9 @@ export default function UserManagement() {
                           {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                       </div>
-                      {!editingUser && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Se não informar uma senha, será gerada automaticamente: [primeiro nome]123
-                        </p>
-                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Campo opcional - usuário pode definir senha posteriormente
+                      </p>
                     </div>
                   </div>
                 )}
@@ -527,7 +545,7 @@ export default function UserManagement() {
                       <option value="">Selecione um médico (opcional)</option>
                       {doctors.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} (CRM: {doctor.crm})
+                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>
                       ))}
                     </select>

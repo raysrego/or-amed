@@ -20,7 +20,7 @@ export function useUserProfile() {
         .from('user_profiles')
         .select(`
           *,
-          doctor:user_profiles!doctor_id(*)
+          doctor:user_profiles!doctor_id(id, name, specialty, crm)
         `)
         .eq('user_id', user?.id)
         .single();

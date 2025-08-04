@@ -35,7 +35,7 @@ export default function ProtectedRoute({
   // Check access permissions
   if (profile) {
     // Admin can access everything
-    if (profile.is_admin) {
+    if (profile.is_admin === true || profile.role === 'admin') {
       return <>{children}</>;
     }
     
@@ -52,7 +52,7 @@ export default function ProtectedRoute({
     }
     
     // Check role-based access
-    if (roles && !roles.includes(profile.role)) {
+    if (roles && profile.role && !roles.includes(profile.role)) {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
