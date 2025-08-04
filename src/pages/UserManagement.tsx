@@ -117,67 +117,72 @@ export default function UserManagement() {
   };
 
   const createUser = async () => {
-    // Validações
-    if (!formData.email?.trim()) throw new Error('Email é obrigatório');
-    if (!formData.name?.trim()) throw new Error('Nome é obrigatório');
-    if (formData.role === 'doctor') {
-      if (!formData.crm?.trim()) throw new Error('CRM é obrigatório para médicos');
-      if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória para médicos');
-    }
-    
-    // Verificar se email já existe
-    const { data: existingUser } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('email', formData.email.trim())
-      .single();
+  if (!formData.email?.trim()) throw new Error('Email é obrigatório');
+  if (!formData.name?.trim()) throw new Error('Nome é obrigatório');
 
-    if (existingUser) {
-      throw new Error('Este email já está cadastrado');
-    }
+  if (formData.role === 'doctor') {
+    if (!formData.crm?.trim()) throw new Error('CRM é obrigatório');
+    if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória');
+  }
 
-    const profileData = {
-      email: formData.email.trim(),
+  // Criação do usuário no Supabase Auth
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: formData.email.trim(),
+    password: formData.password || crypto.randomUUID(), // Gera senha se não for informada
+    email_confirm: true,
+  });
+
+  if (authError || !authData?.user?.id) {
+    throw new Error('Erro ao criar usuário de autenticação: ' + authError?.message);
+  }
+
+  const user_id = authData.user.id;
+
+  // Inserção no perfil
+  const profileData = {
+    user_id,
+    email: formData.email.trim(),
+    name: formData.name.trim(),
+    role: formData.role,
+    crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
+    specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
+    doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
+    is_admin: false,
+  };
+
+  const { error: profileError } = await supabase
+    .from('user_profiles')
+    .insert([profileData]);
+
+  if (profileError) {
+    throw new Error('Erro ao criar perfil: ' + profileError.message);
+  }
+
+  // Inserção em doctors (se for médico)
+  if (formData.role === 'doctor') {
+    const doctorData = {
       name: formData.name.trim(),
-      role: formData.role,
-      crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
-      specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
-      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
-      is_admin: false,
+      cpf: '00000000000', // Temporário
+      crm: formData.crm?.trim() || '',
+      contact: 'Não informado',
+      pix_key: 'Não informado',
+      specialty: formData.specialty?.trim() || '',
+      email: formData.email.trim(),
+      user_id,
     };
 
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .insert([profileData]);
+    const { error: doctorError } = await supabase
+      .from('doctors')
+      .insert([doctorData]);
 
-    if (profileError) {
-      throw new Error('Erro ao criar usuário: ' + profileError.message);
+    if (doctorError) {
+      console.warn('Erro ao criar na tabela doctors:', doctorError.message);
     }
+  }
 
-    // Se for médico, criar também na tabela doctors
-    if (formData.role === 'doctor') {
-      const doctorData = {
-        name: formData.name.trim(),
-        cpf: '00000000000', // CPF temporário - deve ser atualizado depois
-        crm: formData.crm?.trim() || '',
-        contact: 'Não informado', // Contato temporário
-        pix_key: 'Não informado', // PIX temporário
-        specialty: formData.specialty?.trim() || '',
-        email: formData.email.trim(),
-      };
+  alert('Usuário criado com sucesso!');
+};
 
-      const { error: doctorError } = await supabase
-        .from('doctors')
-        .insert([doctorData]);
-
-      if (doctorError) {
-        console.warn('Erro ao criar na tabela doctors:', doctorError.message);
-        // Não falha a operação, apenas avisa
-      }
-    }
-
-    alert('Usuário criado com sucesso!');
-  };
 
   const handleEdit = (userProfile: UserProfile) => {
     setEditingUser(userProfile);
