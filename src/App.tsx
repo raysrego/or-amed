@@ -101,6 +101,11 @@ function App() {
                         <UserManagement />
                       </ProtectedRoute>
                     } />
+                    <Route path="/admin/users" element={
+                      <ProtectedRoute adminOnly>
+                        <UserManagement />
+                      </ProtectedRoute>
+                    } />
                     
                     {/* Redirect unknown routes to dashboard */}
                     <Route path="*" element={<Navigate to="/" replace />} />

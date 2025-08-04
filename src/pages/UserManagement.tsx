@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Users, UserCheck, Stethoscope, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { UserProfile } from '../lib/userTypes';
 
 export default function UserManagement() {
   const { user } = useAuth();
-  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+  const { profile: currentUserProfile, loading: profileLoading } = useUserProfile();
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [doctors, setDoctors] = useState<UserProfile[]>([]);
+  const [doctorUsers, setDoctorUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -26,37 +27,9 @@ export default function UserManagement() {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchCurrentUserProfile();
-    }
-  }, [user]);
-
-  useEffect(() => {
     fetchUsers();
-    fetchDoctors();
+    fetchDoctorUsers();
   }, []);
-
-  const fetchCurrentUserProfile = async () => {
-    try {
-      const result = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (result.error && result.error.code !== 'PGRST116') {
-        throw result.error;
-      }
-
-      if (result.data) {
-        setCurrentUserProfile(result.data);
-      }
-    } catch (error) {
-      console.error('Error fetching current user profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchUsers = async () => {
     try {
@@ -75,23 +48,26 @@ export default function UserManagement() {
       setUsers(result.data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchDoctors = async () => {
+  const fetchDoctorUsers = async () => {
     try {
       const result = await supabase
-        .from('doctors')
+        .from('user_profiles')
         .select('*')
+        .eq('role', 'doctor')
         .order('name');
 
       if (result.error) {
         throw result.error;
       }
 
-      setDoctors(result.data || []);
+      setDoctorUsers(result.data || []);
     } catch (error) {
-      console.error('Error fetching doctors:', error);
+      console.error('Error fetching doctor users:', error);
     }
   };
 
@@ -145,29 +121,29 @@ export default function UserManagement() {
     // Validate required fields
     validateUserData();
     
+    // Check if current user is admin
+    if (!currentUserProfile?.is_admin) {
+      throw new Error('Apenas administradores podem criar usuários');
+    }
+    
     const defaultPassword = formData.name.split(' ')[0].toLowerCase() + '123';
     
-    // Create auth user with admin privileges
-    const { data: { user }, error: authError } = await supabase.auth.admin.createUser({
+    // Create auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email.trim(),
       password: formData.password || defaultPassword,
-      email_confirm: true, // Skip email confirmation
-      user_metadata: {
-        name: formData.name,
-        role: formData.role
-      }
     });
 
     if (authError) {
       throw new Error(parseAuthError(authError.message));
     }
 
-    if (!user) {
+    if (!authData.user) {
       throw new Error('Falha na criação do usuário de autenticação');
     }
 
     // Create user profile
-    await createUserProfile(user.id, defaultPassword);
+    await createUserProfile(authData.user.id, defaultPassword);
   };
 
   const validateUserData = () => {
@@ -193,7 +169,6 @@ export default function UserManagement() {
       email: formData.email.trim(),
       name: formData.name.trim(),
       role: formData.role,
-      old_role: formData.role,
       crm: formData.role === 'doctor' ? formData.crm?.trim() : null,
       specialty: formData.role === 'doctor' ? formData.specialty?.trim() : null,
       doctor_id: formData.role === 'secretary' ? formData.doctor_id || null : null,
@@ -207,7 +182,8 @@ export default function UserManagement() {
     if (profileError) {
       // Cleanup auth user if profile creation fails
       try {
-        await supabase.auth.admin.deleteUser(userId);
+        // Note: Cannot delete user without admin API, but profile creation should work
+        console.error('Profile creation failed:', profileError);
       } catch (cleanupError) {
         console.error('Failed to cleanup auth user:', cleanupError);
       }
@@ -338,6 +314,18 @@ export default function UserManagement() {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
+
+  // Check if user is admin
+  if (!currentUserProfile?.is_admin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Acesso Negado</h2>
+          <p className="text-gray-600">Apenas administradores podem gerenciar usuários.</p>
+        </div>
       </div>
     );
   }
@@ -614,9 +602,9 @@ export default function UserManagement() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Selecione um médico (opcional)</option>
-                      {users.filter(u => u.role === 'doctor').map((doctor) => (
+                      {doctorUsers.map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
+                          Dr. {doctor.name} - {doctor.specialty} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>
                       ))}
                     </select>

@@ -133,7 +133,6 @@ export default function UserBudgetTracking() {
     const request = budget.surgery_request;
     if (!request) return;
 
-    const { total } = calculateBudgetTotal(budget);
     const { subtotal, serviceFee } = calculateBudgetTotal(budget);
 
     // Função para renderizar custos detalhados ou simplificados
@@ -142,29 +141,42 @@ export default function UserBudgetTracking() {
         return `
           <div class="section">
             <h3>Detalhamento de Custos Unitários</h3>
-            <div class="grid">
-              <div>
-                ${budget.icu_daily_cost ? `<div class="item"><span class="label">UTI (${request.icu_days || 0} dias x ${formatCurrency(budget.icu_daily_cost)}):</span> ${formatCurrency((budget.icu_daily_cost || 0) * (request.icu_days || 0))}</div>` : ''}
-                ${budget.ward_daily_cost ? `<div class="item"><span class="label">Enfermaria (${request.ward_days || 0} dias x ${formatCurrency(budget.ward_daily_cost)}):</span> ${formatCurrency((budget.ward_daily_cost || 0) * (request.ward_days || 0))}</div>` : ''}
-                ${budget.room_daily_cost ? `<div class="item"><span class="label">Apartamento (${request.room_days || 0} dias x ${formatCurrency(budget.room_daily_cost)}):</span> ${formatCurrency((budget.room_daily_cost || 0) * (request.room_days || 0))}</div>` : ''}
-              </div>
-              <div>
-                ${budget.anesthetist_fee ? `<div class="item"><span class="label">Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
-                <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
-                ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrency(budget.evoked_potential_fee)}</div>` : ''}
-              </div>
-            </div>
+            
+            <h4 style="margin-top: 15px; color: #166534;">Custos de Internação:</h4>
+            ${budget.icu_daily_cost && request.icu_days ? `<div class="item"><span class="label">UTI:</span> ${request.icu_days} dias × ${formatCurrency(budget.icu_daily_cost)} = ${formatCurrency((budget.icu_daily_cost || 0) * (request.icu_days || 0))}</div>` : ''}
+            ${budget.ward_daily_cost && request.ward_days ? `<div class="item"><span class="label">Enfermaria:</span> ${request.ward_days} dias × ${formatCurrency(budget.ward_daily_cost)} = ${formatCurrency((budget.ward_daily_cost || 0) * (request.ward_days || 0))}</div>` : ''}
+            ${budget.room_daily_cost && request.room_days ? `<div class="item"><span class="label">Apartamento:</span> ${request.room_days} dias × ${formatCurrency(budget.room_daily_cost)} = ${formatCurrency((budget.room_daily_cost || 0) * (request.room_days || 0))}</div>` : ''}
+            
+            <h4 style="margin-top: 15px; color: #166534;">Honorários Profissionais:</h4>
+            ${budget.anesthetist_fee ? `<div class="item"><span class="label">Anestesista:</span> ${formatCurrency(budget.anesthetist_fee)}</div>` : ''}
+            <div class="item"><span class="label">Honorário Médico:</span> ${formatCurrency(budget.doctor_fee)}</div>
+            ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> ${formatCurrency(budget.evoked_potential_fee)}</div>` : ''}
+            
             ${budget.opme_quotes && Array.isArray(budget.opme_quotes) && budget.opme_quotes.length > 0 ? `
               <h4 style="margin-top: 15px; color: #166534;">Materiais OPME:</h4>
               ${budget.opme_quotes.map((opmeQuote: any) => {
                 const selectedQuote = opmeQuote.quotes?.find((q: any) => q.supplier_id === opmeQuote.selected_supplier_id);
                 if (!selectedQuote) return '';
-                return `<div class="item"><span class="label">${opmeQuote.opme_name || 'Material OPME'}:</span> ${formatCurrency(selectedQuote.price || 0)}</div>`;
+                return `<div class="item"><span class="label">${opmeQuote.opme_name || 'Material OPME'}:</span> 1 unidade × ${formatCurrency(selectedQuote.price || 0)} = ${formatCurrency(selectedQuote.price || 0)}</div>`;
               }).join('')}
             ` : ''}
+            
+            ${request.hospital_equipment && request.hospital_equipment.length > 0 ? `
+              <h4 style="margin-top: 15px; color: #166534;">Equipamentos Hospitalares:</h4>
+              <div class="item">${request.hospital_equipment.join(', ')}</div>
+            ` : ''}
+            
+            ${request.exams_during_stay && request.exams_during_stay.length > 0 ? `
+              <h4 style="margin-top: 15px; color: #166534;">Exames Durante Internação:</h4>
+              <div class="item">${request.exams_during_stay.join(', ')}</div>
+            ` : ''}
+            
             <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
               <div class="item"><span class="label">Subtotal:</span> ${formatCurrency(subtotal)}</div>
               <div class="item"><span class="label">Taxa de Serviço (5%):</span> ${formatCurrency(serviceFee)}</div>
+              <div class="item" style="font-size: 18px; font-weight: bold; border-top: 2px solid #166534; padding-top: 10px; margin-top: 10px;">
+                <span class="label">VALOR TOTAL FINAL:</span> ${formatCurrency(total)}
+              </div>
             </div>
           </div>
         `;
@@ -176,6 +188,11 @@ export default function UserBudgetTracking() {
             <div class="item"><span class="label">Honorários Médicos:</span> Inclusos</div>
             <div class="item"><span class="label">Materiais e Equipamentos:</span> Inclusos</div>
             ${request.evoked_potential ? `<div class="item"><span class="label">Potencial Evocado:</span> Incluso</div>` : ''}
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #166534;">
+              <div class="item" style="font-size: 18px; font-weight: bold;">
+                <span class="label">VALOR TOTAL:</span> ${formatCurrency(total)}
+              </div>
+            </div>
           </div>
         `;
       }
