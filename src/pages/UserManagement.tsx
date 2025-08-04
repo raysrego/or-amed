@@ -14,7 +14,7 @@ export default function UserManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -98,7 +98,7 @@ export default function UserManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    setLoading(true);
+    setFormLoading(true);
     
     try {
       await handleUserOperation();
@@ -111,7 +111,7 @@ export default function UserManagement() {
       console.error('Error in handleSubmit:', error);
       alert(parseErrorMessage(error.message));
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -641,9 +641,9 @@ export default function UserManagement() {
                   <button
                     type="submit"
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={loading}
+                    disabled={formLoading}
                   >
-                    {loading ? 'Processando...' : (editingUser ? 'Atualizar' : 'Criar Usuário')}
+                    {formLoading ? 'Processando...' : (editingUser ? 'Atualizar' : 'Criar Usuário')}
                   </button>
                 </div>
               </form>
