@@ -189,8 +189,6 @@ export default function Budgets() {
 
     const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
 
-    const { subtotal, serviceFee, total } = calculateBudgetTotal(budget);
-
     const procedureNames = getProcedureNames(request.procedure_ids || []);
 
     // Função local para formatar moeda na impressão
