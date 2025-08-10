@@ -104,7 +104,7 @@ export default function UserManagement() {
       role: formData.role,
       crm: formData.role === 'doctor' ? formData.crm : null,
       specialty: formData.role === 'doctor' ? formData.specialty : null,
-      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : doctorId,
+      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
     };
 
     const result = await supabase
@@ -117,72 +117,98 @@ export default function UserManagement() {
   };
 
   const createUser = async () => {
-  if (!formData.email?.trim()) throw new Error('Email é obrigatório');
-  if (!formData.name?.trim()) throw new Error('Nome é obrigatório');
+    if (!formData.email?.trim()) throw new Error('Email é obrigatório');
+    if (!formData.name?.trim()) throw new Error('Nome é obrigatório');
 
-  if (formData.role === 'doctor') {
-    if (!formData.crm?.trim()) throw new Error('CRM é obrigatório');
-    if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória');
-  }
+    if (formData.role === 'doctor') {
+      if (!formData.crm?.trim()) throw new Error('CRM é obrigatório');
+      if (!formData.specialty?.trim()) throw new Error('Especialidade é obrigatória');
+    }
 
-  // Criação do usuário no Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: formData.email.trim(),
-    password: formData.password || crypto.randomUUID(), // Gera senha se não for informada
-    email_confirm: true,
-  });
+    if (formData.role === 'secretary' && formData.doctor_id) {
+      // Verificar se o médico existe
+      const { data: doctorExists } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', formData.doctor_id)
+        .eq('role', 'doctor')
+        .single();
 
-  if (authError || !authData?.user?.id) {
-    throw new Error('Erro ao criar usuário de autenticação: ' + authError?.message);
-  }
+      if (!doctorExists) {
+        throw new Error('Médico selecionado não encontrado');
+      }
+    }
 
-  const user_id = authData.user.id;
+    // Verificar se email já existe
+    const { data: existingUser } = await supabase
+      .from('user_profiles')
+      .select('email')
+      .eq('email', formData.email.trim())
+      .single();
 
-  // Inserção no perfil
-  const profileData = {
-    user_id,
-    email: formData.email.trim(),
-    name: formData.name.trim(),
-    role: formData.role,
-    crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
-    specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
-    doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
-    is_admin: false,
-  };
+    if (existingUser) {
+      throw new Error('Este email já está cadastrado');
+    }
 
-  const { error: profileError } = await supabase
-    .from('user_profiles')
-    .insert([profileData]);
-
-  if (profileError) {
-    throw new Error('Erro ao criar perfil: ' + profileError.message);
-  }
-
-  // Inserção em doctors (se for médico)
-  if (formData.role === 'doctor') {
-    const doctorData = {
-      name: formData.name.trim(),
-      cpf: '00000000000', // Temporário
-      crm: formData.crm?.trim() || '',
-      contact: 'Não informado',
-      pix_key: 'Não informado',
-      specialty: formData.specialty?.trim() || '',
+    // Criação do usuário no Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: formData.email.trim(),
+      password: formData.password || Math.random().toString(36).slice(-12),
+      email_confirm: true,
+    });
+
+    if (authError || !authData?.user?.id) {
+      throw new Error('Erro ao criar usuário de autenticação: ' + (authError?.message || 'Erro desconhecido'));
+    }
+
+    const user_id = authData.user.id;
+
+    // Inserção no perfil
+    const profileData = {
       user_id,
+      email: formData.email.trim(),
+      name: formData.name.trim(),
+      role: formData.role,
+      crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
+      specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
+      doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
+      is_admin: false,
     };
 
-    const { error: doctorError } = await supabase
-      .from('doctors')
-      .insert([doctorData]);
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .insert([profileData]);
 
-    if (doctorError) {
-      console.warn('Erro ao criar na tabela doctors:', doctorError.message);
+    if (profileError) {
+      // Cleanup: delete auth user if profile creation fails
+      await supabase.auth.admin.deleteUser(user_id);
+      throw new Error('Erro ao criar perfil: ' + profileError.message);
     }
-  }
 
-  alert('Usuário criado com sucesso!');
-};
+    // Inserção em doctors (se for médico)
+    if (formData.role === 'doctor') {
+      const doctorData = {
+        name: formData.name.trim(),
+        cpf: '00000000000',
+        crm: formData.crm?.trim() || '',
+        contact: 'Não informado',
+        pix_key: 'Não informado',
+        specialty: formData.specialty?.trim() || '',
+        email: formData.email.trim(),
+        user_id,
+      };
 
+      const { error: doctorError } = await supabase
+        .from('doctors')
+        .insert([doctorData]);
+
+      if (doctorError) {
+        console.warn('Warning: Erro ao criar na tabela doctors:', doctorError.message);
+      }
+    }
+
+    alert('Usuário criado com sucesso!');
+  };
 
   const handleEdit = (userProfile: UserProfile) => {
     setEditingUser(userProfile);
@@ -548,14 +574,14 @@ export default function UserManagement() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Selecione um médico (opcional)</option>
-                      {doctors.map((doctor) => (
+                        placeholder="Deixe vazio para gerar automaticamente"
                         <option key={doctor.id} value={doctor.id}>
                           Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>
                       ))}
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
-                      Vincule a secretária a um médico para gerenciar seus pedidos
+                      Se vazio, será gerada uma senha aleatória
                     </p>
                   </div>
                 )}
