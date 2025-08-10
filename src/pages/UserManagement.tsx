@@ -20,7 +20,7 @@ export default function UserManagement() {
     email: '',
     password: '',
     name: '',
-    role: 'secretary' as 'doctor' | 'secretary',
+    role: 'secretary' as 'doctor' | 'secretary' | 'admin',
     crm: '',
     specialty: '',
     doctor_id: '',
@@ -102,6 +102,7 @@ export default function UserManagement() {
     const profileData = {
       name: formData.name,
       role: formData.role,
+      is_admin: formData.role === 'admin',
       crm: formData.role === 'doctor' ? formData.crm : null,
       specialty: formData.role === 'doctor' ? formData.specialty : null,
       doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
@@ -169,10 +170,10 @@ export default function UserManagement() {
       email: formData.email.trim(),
       name: formData.name.trim(),
       role: formData.role,
+      is_admin: formData.role === 'admin',
       crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
       specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
       doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
-      is_admin: false,
     };
 
     const { error: profileError } = await supabase
@@ -216,7 +217,7 @@ export default function UserManagement() {
       email: '', // Email não pode ser editado
       password: '',
       name: userProfile.name,
-      role: userProfile.role as 'doctor' | 'secretary',
+      role: userProfile.role as 'doctor' | 'secretary' | 'admin',
       crm: userProfile.crm || '',
       specialty: userProfile.specialty || '',
       doctor_id: userProfile.doctor_id || '',
@@ -257,6 +258,7 @@ export default function UserManagement() {
     switch (role) {
       case 'doctor': return <Stethoscope className="h-5 w-5 text-green-600" />;
       case 'secretary': return <UserCheck className="h-5 w-5 text-blue-600" />;
+      case 'admin': return <Users className="h-5 w-5 text-purple-600" />;
       default: return <Users className="h-5 w-5 text-gray-600" />;
     }
   };
@@ -479,14 +481,38 @@ export default function UserManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Função *
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label className="relative">
+                      <input
+                        type="radio"
+                        name="role"
+                        value="admin"
+                        checked={formData.role === 'admin'}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value as 'doctor' | 'secretary' | 'admin' })}
+                        className="sr-only"
+                      />
+                      <div className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        formData.role === 'admin' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <div className="flex items-center">
+                          <Users className="h-6 w-6 text-purple-600 mr-3" />
+                          <div>
+                            <div className="font-medium text-gray-900">Administrador</div>
+                            <div className="text-sm text-gray-600">Acesso total ao sistema</div>
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+
                     <label className="relative">
                       <input
                         type="radio"
                         name="role"
                         value="doctor"
                         checked={formData.role === 'doctor'}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value as 'doctor' | 'secretary' })}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value as 'doctor' | 'secretary' | 'admin' })}
                         className="sr-only"
                       />
                       <div className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
@@ -510,7 +536,7 @@ export default function UserManagement() {
                         name="role"
                         value="secretary"
                         checked={formData.role === 'secretary'}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value as 'doctor' | 'secretary' })}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value as 'doctor' | 'secretary' | 'admin' })}
                         className="sr-only"
                       />
                       <div className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
