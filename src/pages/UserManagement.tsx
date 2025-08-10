@@ -564,69 +564,54 @@ export default function UserManagement() {
                 )}
 
                 {formData.role === 'secretary' && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Médico Responsável
-    </label>
-    <select
-      value={formData.doctor_id}
-      onChange={(e) =>
-        setFormData({ ...formData, doctor_id: e.target.value })
-      }
-      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-    >
-      <option value="">Selecione um médico (opcional)</option>
-      {formData.role === 'secretary' && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Médico Responsável
-    </label>
-    <select
-      value={formData.doctor_id}
-      onChange={(e) =>
-        setFormData({ ...formData, doctor_id: e.target.value })
-      }
-      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-    >
-      <option value="">Selecione um médico (opcional)</option>
-      {Array.isArray(doctors) &&
-        doctors.map((doctor) => (
-          <option key={doctor.id} value={doctor.id}>
-            Dr. {doctor.name} -{" "}
-            {doctor.specialty || "Especialidade não informada"}{" "}
-            {doctor.crm ? `(CRM: ${doctor.crm})` : ""}
-          </option>
-        ))}
-    </select>
-    <p className="text-xs text-gray-500 mt-1">
-      Se vazio, será gerada uma senha aleatória
-    </p>
-  </div>
-)}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Médico Responsável
+                    </label>
+                    <select
+                      value={formData.doctor_id}
+                      onChange={(e) => setFormData({ ...formData, doctor_id: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">Selecione um médico (opcional)</option>
+                      {doctors.map((doctor) => (
+                        <option key={doctor.id} value={doctor.id}>
+                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Campo opcional
+                    </p>
+                  </div>
+                )}
 
-<div className="flex justify-end space-x-3 pt-4">
-  <button
-    type="button"
-    onClick={() => {
-      setShowModal(false);
-      setEditingUser(null);
-      resetForm();
-    }}
-    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-  >
-    Cancelar
-  </button>
-  <button
-    type="submit"
-    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-    disabled={formLoading}
-  >
-    {formLoading
-      ? "Processando..."
-      : editingUser
-      ? "Atualizar"
-      : "Criar Usuário"}
-  </button>
-</div>
-</form>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditingUser(null);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={formLoading}
+                  >
+                    {formLoading ? 'Processando...' : editingUser ? 'Atualizar' : 'Criar Usuário'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
