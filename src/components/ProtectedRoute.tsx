@@ -34,8 +34,8 @@ export default function ProtectedRoute({
 
   // Check access permissions
   if (profile) {
-    // Admin can access everything (check both fields for compatibility)
-    if (profile.is_admin === true || profile.role === 'admin' || profile.email === 'rayannyrego@gmail.com') {
+    // Admin can access everything
+    if (profile.is_admin === true || profile.role === 'admin') {
       return <>{children}</>;
     }
     
@@ -63,6 +63,11 @@ export default function ProtectedRoute({
       );
     }
     
+    return <>{children}</>;
+  }
+  
+  // Fallback especial para rayannyrego@gmail.com
+  if (user?.email === 'rayannyrego@gmail.com') {
     return <>{children}</>;
   }
   

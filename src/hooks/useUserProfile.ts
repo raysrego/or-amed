@@ -18,7 +18,7 @@ export function useUserProfile() {
     try {
       // Para o admin rayannyrego@gmail.com, criar perfil se não existir
       if (user?.email === 'rayannyrego@gmail.com') {
-        const { data: existingProfile } = await supabase
+        const { data: existingProfile, error: fetchError } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('email', 'rayannyrego@gmail.com')
@@ -26,18 +26,40 @@ export function useUserProfile() {
 
         if (!existingProfile) {
           // Criar perfil admin
-          const { error: insertError } = await supabase
+          const { data: newProfile, error: insertError } = await supabase
             .from('user_profiles')
-            .insert([{
+            .insert({
               user_id: user.id,
               email: 'rayannyrego@gmail.com',
               name: 'Rayanny Rego - Administrador',
               role: 'admin',
               is_admin: true,
-            }]);
+            })
+            .select()
+            .single();
 
-          if (insertError) {
-            console.error('Error creating admin profile:', insertError);
+          if (!insertError && newProfile) {
+            setProfile(newProfile);
+            setLoading(false);
+            return;
+          }
+        } else if (existingProfile && (!existingProfile.is_admin || existingProfile.role !== 'admin')) {
+          // Atualizar perfil existente para admin
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from('user_profiles')
+            .update({
+              role: 'admin',
+              is_admin: true,
+              name: existingProfile.name || 'Rayanny Rego - Administrador'
+            })
+            .eq('email', 'rayannyrego@gmail.com')
+            .select()
+            .single();
+
+          if (!updateError && updatedProfile) {
+            setProfile(updatedProfile);
+            setLoading(false);
+            return;
           }
         }
       }
@@ -71,12 +93,24 @@ export function useUserProfile() {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Fallback para admin em caso de erro
+      if (user?.email === 'rayannyrego@gmail.com') {
+        setProfile({
+          id: 'admin-fallback',
+          user_id: user.id,
+          name: 'Rayanny Rego - Administrador',
+          role: 'admin',
+          is_admin: true,
+          email: 'rayannyrego@gmail.com',
+          created_at: new Date().toISOString(),
+        } as UserProfile);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const isAdmin = () => profile?.is_admin === true;
+  const isAdmin = () => profile?.is_admin === true || user?.email === 'rayannyrego@gmail.com';
   const isDoctor = () => profile?.role === 'doctor';
   const isSecretary = () => profile?.role === 'secretary';
   const hasRole = (roles: string[]) => profile?.role ? roles.includes(profile.role) : false;
