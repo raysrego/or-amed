@@ -564,22 +564,29 @@ export default function UserManagement() {
                 )}
 
                 {formData.role === 'secretary' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Médico Responsável
-                    </label>
-                    <select
-                      value={formData.doctor_id}
-                      onChange={(e) => setFormData({ ...formData, doctor_id: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      <option value="">Selecione um médico (opcional)</option>
-                        placeholder="Deixe vazio para gerar automaticamente"
-                        <option key={doctor.id} value={doctor.id}>
-                          Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
-                        </option>
-                      ))}
-                    </select>
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Médico Responsável
+    </label>
+    <select
+      value={formData.doctor_id}
+      onChange={(e) =>
+        setFormData({ ...formData, doctor_id: e.target.value })
+      }
+      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+    >
+      <option value="">Selecione um médico (opcional)</option>
+      {doctors.map((doctor) => (
+        <option key={doctor.id} value={doctor.id}>
+          Dr. {doctor.name} -{" "}
+          {doctor.specialty || "Especialidade não informada"}{" "}
+          {doctor.crm ? `(CRM: ${doctor.crm})` : ""}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+  </select>
                     <p className="text-xs text-gray-500 mt-1">
                       Se vazio, será gerada uma senha aleatória
                     </p>
