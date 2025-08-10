@@ -66,10 +66,7 @@ export function useUserProfile() {
 
       const result = await supabase
         .from('user_profiles')
-        .select(`
-          *,
-          doctor:user_profiles!doctor_id(id, name, specialty, crm)
-        `)
+        .select('*')
         .eq('user_id', user?.id)
         .single();
 
