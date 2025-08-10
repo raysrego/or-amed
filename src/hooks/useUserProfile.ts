@@ -16,6 +16,32 @@ export function useUserProfile() {
 
   const fetchProfile = async () => {
     try {
+      // Para o admin rayannyrego@gmail.com, criar perfil se não existir
+      if (user?.email === 'rayannyrego@gmail.com') {
+        const { data: existingProfile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', 'rayannyrego@gmail.com')
+          .single();
+
+        if (!existingProfile) {
+          // Criar perfil admin
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert([{
+              user_id: user.id,
+              email: 'rayannyrego@gmail.com',
+              name: 'Rayanny Rego - Administrador',
+              role: 'admin',
+              is_admin: true,
+            }]);
+
+          if (insertError) {
+            console.error('Error creating admin profile:', insertError);
+          }
+        }
+      }
+
       const result = await supabase
         .from('user_profiles')
         .select(`
@@ -31,6 +57,17 @@ export function useUserProfile() {
 
       if (result.data) {
         setProfile(result.data);
+      } else if (user?.email === 'rayannyrego@gmail.com') {
+        // Fallback para admin
+        setProfile({
+          id: 'admin-temp',
+          user_id: user.id,
+          name: 'Rayanny Rego - Administrador',
+          role: 'admin',
+          is_admin: true,
+          email: 'rayannyrego@gmail.com',
+          created_at: new Date().toISOString(),
+        } as UserProfile);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);

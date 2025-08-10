@@ -357,7 +357,7 @@ export default function UserSurgeryRequest() {
     );
   }
 
-  if (!profile) {
+  if (!profile && user?.email !== 'rayannyrego@gmail.com') {
     return (
       <div className="text-center py-12">
         <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -375,12 +375,17 @@ export default function UserSurgeryRequest() {
     );
   }
 
+  // Admin pode acessar mesmo sem perfil configurado
+  const isAdmin = user?.email === 'rayannyrego@gmail.com' || profile?.is_admin;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos de Cirurgia</h1>
-          <p className="text-gray-600 mt-2">Gerencie seus pedidos de cirurgia</p>
+          <p className="text-gray-600 mt-2">
+            {isAdmin ? 'Gerencie todos os pedidos de cirurgia' : 'Gerencie seus pedidos de cirurgia'}
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}

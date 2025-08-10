@@ -122,6 +122,11 @@ export default function Login() {
                 Cadastre-se
               </Link>
             </p>
+            <p className="text-gray-600 mt-2">
+              <Link to="/forgot-password" className="text-green-600 hover:text-green-700 font-medium">
+                Esqueceu sua senha?
+              </Link>
+            </p>
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
                 <strong>Usuários do sistema:</strong> Use as credenciais fornecidas pelo administrador.
