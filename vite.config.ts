@@ -17,7 +17,4 @@ export default defineConfig({
     exclude: ['lucide-react'],
     include: ['react', 'react-dom'],
   },
-  esbuild: {
-    jsxInject: `import React from 'react'`,
-  },
 });
