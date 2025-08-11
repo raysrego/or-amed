@@ -1,5 +1,6 @@
 import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 // Validation helpers
 const validateEmail = (email: string): boolean => {
@@ -8,7 +9,7 @@ const validateEmail = (email: string): boolean => {
 };
 
 const generateRandomPassword = (): string => {
-  return Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+  return crypto.randomBytes(16).toString('hex');
 };
 
 // CORS headers
@@ -16,6 +17,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json',
 };
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
@@ -42,6 +44,13 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+    console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseServiceKey,
+      urlStart: supabaseUrl?.substring(0, 20),
+      keyStart: supabaseServiceKey?.substring(0, 20)
+    });
+
     if (!supabaseUrl || !supabaseServiceKey) {
       return {
         statusCode: 500,
@@ -54,6 +63,12 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
       },
     });
 
@@ -118,10 +133,9 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
       // Verify doctor exists
       const { data: doctorExists } = await supabase
-        .from('user_profiles')
+        .from('doctors')
         .select('id')
         .eq('id', doctor_id)
-        .eq('role', 'doctor')
         .single();
 
       if (!doctorExists) {
@@ -151,11 +165,17 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     // Generate password if not provided
     const userPassword = password || generateRandomPassword();
 
+    console.log('Creating user with email:', email);
+
     // Create user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email.trim(),
       password: userPassword,
       email_confirm: true,
+      user_metadata: {
+        name: name.trim(),
+        role: role,
+      },
     });
 
     if (authError || !authData?.user?.id) {
@@ -170,6 +190,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     }
 
     const user_id = authData.user.id;
+    console.log('User created with ID:', user_id);
 
     // Prepare profile data
     const profileData = {
@@ -182,6 +203,8 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       doctor_id: role === 'secretary' ? doctor_id : null,
       is_admin: role === 'admin',
     };
+
+    console.log('Inserting profile data:', profileData);
 
     // Insert into user_profiles
     const { error: profileError } = await supabase
@@ -201,6 +224,8 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       };
     }
 
+    console.log('Profile created successfully');
+
     // If doctor, also insert into doctors table
     if (role === 'doctor') {
       const doctorData = {
@@ -214,6 +239,8 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         user_id,
       };
 
+      console.log('Creating doctor record:', doctorData);
+
       const { error: doctorError } = await supabase
         .from('doctors')
         .insert([doctorData]);
@@ -226,7 +253,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
     // Success response
     return {
-      statusCode: 200,
+      statusCode: 201,
       headers: corsHeaders,
       body: JSON.stringify({
         message: 'Usuário criado com sucesso',
@@ -236,6 +263,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
           name: name.trim(),
           role,
           password_generated: !password,
+          password: !password ? userPassword : undefined,
         },
       }),
     };

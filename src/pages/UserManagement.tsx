@@ -129,10 +129,9 @@ export default function UserManagement() {
     if (formData.role === 'secretary' && formData.doctor_id) {
       // Verificar se o médico existe
       const { data: doctorExists } = await supabase
-        .from('user_profiles')
+        .from('doctors')
         .select('id')
         .eq('id', formData.doctor_id)
-        .eq('role', 'doctor')
         .single();
 
       if (!doctorExists) {
@@ -151,64 +150,42 @@ export default function UserManagement() {
       throw new Error('Este email já está cadastrado');
     }
 
-    // Criação do usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Preparar dados para envio
+    const userData = {
       email: formData.email.trim(),
       password: formData.password || Math.random().toString(36).slice(-12),
-      email_confirm: true,
-    });
-
-    if (authError || !authData?.user?.id) {
-      throw new Error('Erro ao criar usuário de autenticação: ' + (authError?.message || 'Erro desconhecido'));
-    }
-
-    const user_id = authData.user.id;
-
-    // Inserção no perfil
-    const profileData = {
-      user_id,
-      email: formData.email.trim(),
       name: formData.name.trim(),
       role: formData.role,
-      is_admin: formData.role === 'admin',
       crm: formData.role === 'doctor' ? formData.crm?.trim() || null : null,
       specialty: formData.role === 'doctor' ? formData.specialty?.trim() || null : null,
       doctor_id: formData.role === 'secretary' ? (formData.doctor_id || null) : null,
     };
 
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .insert([profileData]);
+    console.log('Sending user data:', userData);
 
-    if (profileError) {
-      // Cleanup: delete auth user if profile creation fails
-      await supabase.auth.admin.deleteUser(user_id);
-      throw new Error('Erro ao criar perfil: ' + profileError.message);
+    // Chamar a função serverless
+    const response = await fetch('/.netlify/functions/create-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Erro ao criar usuário');
     }
 
-    // Inserção em doctors (se for médico)
-    if (formData.role === 'doctor') {
-      const doctorData = {
-        name: formData.name.trim(),
-        cpf: '00000000000',
-        crm: formData.crm?.trim() || '',
-        contact: 'Não informado',
-        pix_key: 'Não informado',
-        specialty: formData.specialty?.trim() || '',
-        email: formData.email.trim(),
-        user_id,
-      };
-
-      const { error: doctorError } = await supabase
-        .from('doctors')
-        .insert([doctorData]);
-
-      if (doctorError) {
-        console.warn('Warning: Erro ao criar na tabela doctors:', doctorError.message);
-      }
+    console.log('User created successfully:', result);
+    
+    // Mostrar senha gerada se aplicável
+    if (result.user?.password_generated && result.user?.password) {
+      alert(`Usuário criado com sucesso!\n\nSenha gerada: ${result.user.password}\n\nAnote esta senha, ela não será mostrada novamente.`);
+    } else {
+      alert('Usuário criado com sucesso!');
     }
-
-    alert('Usuário criado com sucesso!');
   };
 
   const handleEdit = (userProfile: UserProfile) => {
