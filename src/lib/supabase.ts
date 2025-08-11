@@ -44,19 +44,25 @@ export const supabase = createClient(
 // Test connection on initialization
 const testConnection = async () => {
   try {
-    const { data, error } = await supabase.from('user_profiles').select('count').limit(1);
+    console.log('🔍 Testing Supabase connection...');
+    const { data, error } = await supabase.from('user_profiles').select('count', { count: 'exact', head: true });
     if (error) {
-      console.error('❌ Supabase connection failed:', error.message);
+      console.error('❌ Supabase connection failed:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
     } else {
-      console.log('✅ Supabase connection successful');
+      console.log('✅ Supabase connection successful', data);
     }
   } catch (error) {
-    console.error('❌ Supabase connection error:', error);
+    console.error('❌ Supabase connection error (catch):', error);
   }
 };
 
 // Test connection after a short delay
-setTimeout(testConnection, 1000);
 // Database types
 export interface Patient {
   id: string;

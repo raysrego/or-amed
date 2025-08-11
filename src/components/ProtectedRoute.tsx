@@ -15,7 +15,7 @@ export default function ProtectedRoute({
   roles,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile, loading: profileLoading, error: profileError } = useUserProfile();
 
   // Add error boundary for this component
   const [hasError, setHasError] = React.useState(false);
@@ -29,6 +29,27 @@ export default function ProtectedRoute({
     window.addEventListener('error', handleError);
     return () => window.removeEventListener('error', handleError);
   }, []);
+
+  // Show profile error if exists
+  if (profileError && !loading && !profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Erro no Perfil</h2>
+          <p className="text-gray-600 mb-4">Erro ao carregar perfil do usuário:</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-red-600 text-sm">{profileError}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (hasError) {
     return (
@@ -46,6 +67,7 @@ export default function ProtectedRoute({
       </div>
     );
   }
+  
   if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -54,6 +76,9 @@ export default function ProtectedRoute({
           <p className="text-gray-600">Carregando...</p>
           <p className="text-xs text-gray-500 mt-2">
             Auth: {loading ? 'Loading...' : 'Ready'} | Profile: {profileLoading ? 'Loading...' : 'Ready'}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            User: {user?.email || 'None'} | Profile: {profile?.name || 'None'}
           </p>
         </div>
       </div>
@@ -109,6 +134,9 @@ export default function ProtectedRoute({
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Configuração Necessária</h2>
         <p className="text-gray-600 mb-4">Complete seu perfil para continuar.</p>
+        <p className="text-xs text-gray-500 mb-4">
+          Debug: User={user?.email}, Profile={profile ? 'exists' : 'null'}, Loading={profileLoading ? 'yes' : 'no'}
+        </p>
         <button
           onClick={() => window.location.href = '/user-profile'}
           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
