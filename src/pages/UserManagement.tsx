@@ -10,6 +10,7 @@ export default function UserManagement() {
   const { profile: currentUserProfile, loading: profileLoading } = useUserProfile();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [doctorsFromUserProfiles, setDoctorsFromUserProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -28,7 +29,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
-    fetchDoctors();
+    fetchDoctorsFromBothTables();
   }, []);
 
   const fetchUsers = async () => {
@@ -53,19 +54,33 @@ export default function UserManagement() {
     }
   };
 
-  const fetchDoctors = async () => {
+  const fetchDoctorsFromBothTables = async () => {
     try {
-      const result = await supabase
+      // Buscar médicos da tabela doctors
+      const doctorsResult = await supabase
+        .from('doctors')
+        .select('id, name, crm, specialty')
+        .order('name');
+
+      if (doctorsResult.error) {
+        console.error('Error fetching doctors from doctors table:', doctorsResult.error);
+      } else {
+        setDoctors(doctorsResult.data || []);
+      }
+
+      // Buscar médicos da tabela user_profiles
+      const userProfilesResult = await supabase
         .from('user_profiles')
         .select('id, name, crm, specialty')
         .eq('role', 'doctor')
         .order('name');
 
-      if (result.error) {
-        throw result.error;
+      if (userProfilesResult.error) {
+        console.error('Error fetching doctors from user_profiles:', userProfilesResult.error);
+      } else {
+        setDoctorsFromUserProfiles(userProfilesResult.data || []);
       }
 
-      setDoctors(result.data || []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
     }
@@ -87,7 +102,7 @@ export default function UserManagement() {
       setEditingUser(null);
       resetForm();
       fetchUsers();
-      fetchDoctors();
+      fetchDoctorsFromBothTables();
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
       alert(error.message || 'Erro ao salvar usuário');
@@ -127,14 +142,11 @@ export default function UserManagement() {
     }
 
     if (formData.role === 'secretary' && formData.doctor_id) {
-      // Verificar se o médico existe
-      const { data: doctorExists } = await supabase
-        .from('doctors')
-        .select('id')
-        .eq('id', formData.doctor_id)
-        .single();
-
-      if (!doctorExists) {
+      // Verificar se o médico existe em qualquer uma das tabelas
+      const doctorExistsInDoctors = doctors.find(d => d.id === formData.doctor_id);
+      const doctorExistsInUserProfiles = doctorsFromUserProfiles.find(d => d.id === formData.doctor_id);
+      
+      if (!doctorExistsInDoctors && !doctorExistsInUserProfiles) {
         throw new Error('Médico selecionado não encontrado');
       }
     }
@@ -577,7 +589,55 @@ export default function UserManagement() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                       <option value="">Selecione um médico (opcional)</option>
-                      {doctors.map((doctor) => (
+                      <optgroup label="Médicos (Tabela Doctors)">
+                        {doctors.map((doctor) => (
+                          <option key={`doctors-${doctor.id}`} value={doctor.id}>
+                            Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Médicos (User Profiles)">
+                        {doctorsFromUserProfiles.map((doctor) => (
+                          <option key={`user-profiles-${doctor.id}`} value={doctor.id}>
+                            Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Campo opcional - Médicos de ambas as tabelas disponíveis
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditingUser(null);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={formLoading}
+                  >
+                    {formLoading ? 'Processando...' : editingUser ? 'Atualizar' : 'Criar Usuário'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
                         <option key={doctor.id} value={doctor.id}>
                           Dr. {doctor.name} - {doctor.specialty || 'Especialidade não informada'} {doctor.crm ? `(CRM: ${doctor.crm})` : ''}
                         </option>

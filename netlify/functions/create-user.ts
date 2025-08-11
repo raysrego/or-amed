@@ -21,8 +21,13 @@ const corsHeaders = {
 };
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+  console.log('🚀 Function create-user called');
+  console.log('Method:', event.httpMethod);
+  console.log('Headers:', JSON.stringify(event.headers, null, 2));
+  
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
+    console.log('✅ Handling CORS preflight');
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -47,11 +52,14 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     console.log('Environment check:', {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseServiceKey,
-      urlStart: supabaseUrl?.substring(0, 20),
-      keyStart: supabaseServiceKey?.substring(0, 20)
+      urlStart: supabaseUrl?.substring(0, 30),
+      keyStart: supabaseServiceKey?.substring(0, 30),
+      fullUrl: supabaseUrl,
+      nodeEnv: process.env.NODE_ENV
     });
 
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Missing environment variables');
       return {
         statusCode: 500,
         headers: corsHeaders,
@@ -65,18 +73,17 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         persistSession: false,
         detectSessionInUrl: false,
       },
-      global: {
-        headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-      },
     });
+
+    console.log('✅ Supabase client created');
 
     // Parse request body
     let requestBody;
     try {
       requestBody = JSON.parse(event.body || '{}');
+      console.log('📝 Request body parsed:', { ...requestBody, password: requestBody.password ? '[HIDDEN]' : undefined });
     } catch (error) {
+      console.error('❌ JSON parse error:', error);
       return {
         statusCode: 400,
         headers: corsHeaders,
@@ -124,6 +131,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
     if (role === 'secretary') {
       if (!doctor_id) {
+        console.log('❌ Secretary missing doctor_id');
         return {
           statusCode: 400,
           headers: corsHeaders,
@@ -132,27 +140,46 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       }
 
       // Verify doctor exists
+      console.log('🔍 Checking if doctor exists:', doctor_id);
       const { data: doctorExists } = await supabase
         .from('doctors')
         .select('id')
         .eq('id', doctor_id)
         .single();
 
+      console.log('Doctor check result:', doctorExists);
+
       if (!doctorExists) {
-        return {
-          statusCode: 400,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: 'Médico não encontrado' }),
-        };
+        // Try checking in user_profiles table
+        console.log('🔍 Checking doctor in user_profiles table');
+        const { data: doctorInUserProfiles } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('id', doctor_id)
+          .eq('role', 'doctor')
+          .single();
+
+        console.log('Doctor in user_profiles result:', doctorInUserProfiles);
+
+        if (!doctorInUserProfiles) {
+          return {
+            statusCode: 400,
+            headers: corsHeaders,
+            body: JSON.stringify({ error: 'Médico não encontrado em nenhuma tabela' }),
+          };
+        }
       }
     }
 
     // Check if email already exists
+    console.log('🔍 Checking if email exists:', email);
     const { data: existingUser } = await supabase
       .from('user_profiles')
       .select('email')
       .eq('email', email)
       .single();
+
+    console.log('Existing user check:', existingUser);
 
     if (existingUser) {
       return {
@@ -168,14 +195,11 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     console.log('Creating user with email:', email);
 
     // Create user in Supabase Auth
+    console.log('🔐 Creating user in Supabase Auth...');
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email.trim(),
       password: userPassword,
       email_confirm: true,
-      user_metadata: {
-        name: name.trim(),
-        role: role,
-      },
     });
 
     if (authError || !authData?.user?.id) {
@@ -193,6 +217,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     console.log('User created with ID:', user_id);
 
     // Prepare profile data
+    console.log('📝 Preparing profile data...');
     const profileData = {
       user_id,
       email: email.trim(),
@@ -207,6 +232,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     console.log('Inserting profile data:', profileData);
 
     // Insert into user_profiles
+    console.log('💾 Inserting into user_profiles...');
     const { error: profileError } = await supabase
       .from('user_profiles')
       .insert([profileData]);
@@ -215,6 +241,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       console.error('Profile error:', profileError);
 
       // Cleanup: delete auth user if profile creation fails
+      console.log('🧹 Cleaning up auth user due to profile error...');
       await supabase.auth.admin.deleteUser(user_id);
 
       return {
@@ -228,6 +255,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
     // If doctor, also insert into doctors table
     if (role === 'doctor') {
+      console.log('👨‍⚕️ Creating doctor record...');
       const doctorData = {
         name: name.trim(),
         cpf: '00000000000',
@@ -248,10 +276,13 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       if (doctorError) {
         console.warn('Warning: Erro ao criar na tabela doctors:', doctorError.message);
         // Don't fail the entire operation, just log the warning
+      } else {
+        console.log('✅ Doctor record created successfully');
       }
     }
 
     // Success response
+    console.log('✅ User creation completed successfully');
     return {
       statusCode: 201,
       headers: corsHeaders,
