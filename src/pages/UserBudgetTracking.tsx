@@ -88,36 +88,41 @@ export default function UserBudgetTracking() {
     const request = budget.surgery_request;
     if (!request) return { subtotal: 0, serviceFee: 0, total: 0 };
 
-    let subtotal = 0;
+    try {
+      let subtotal = 0;
 
-    // Add accommodation costs
-    subtotal += (budget.icu_daily_cost || 0) * (request.icu_days || 0);
-    subtotal += (budget.ward_daily_cost || 0) * (request.ward_days || 0);
-    subtotal += (budget.room_daily_cost || 0) * (request.room_days || 0);
+      // Add accommodation costs
+      subtotal += (budget.icu_daily_cost || 0) * (request.icu_days || 0);
+      subtotal += (budget.ward_daily_cost || 0) * (request.ward_days || 0);
+      subtotal += (budget.room_daily_cost || 0) * (request.room_days || 0);
 
-    // Add fees
-    subtotal += budget.anesthetist_fee || 0;
-    subtotal += budget.doctor_fee || 0;
+      // Add fees
+      subtotal += budget.anesthetist_fee || 0;
+      subtotal += budget.doctor_fee || 0;
 
-    // Add evoked potential fee if applicable
-    if (request.evoked_potential) {
-      subtotal += budget.evoked_potential_fee || 0;
+      // Add evoked potential fee if applicable
+      if (request.evoked_potential) {
+        subtotal += budget.evoked_potential_fee || 0;
+      }
+
+      // Add OPME costs
+      if (budget.opme_quotes && Array.isArray(budget.opme_quotes)) {
+        budget.opme_quotes.forEach((quote: any) => {
+          const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
+          if (selectedQuote) {
+            subtotal += selectedQuote.price || 0;
+          }
+        });
+      }
+
+      const serviceFee = subtotal * 0.02; // 2% service fee
+      const total = subtotal + serviceFee;
+
+      return { subtotal, serviceFee, total };
+    } catch (error) {
+      console.error('❌ Error calculating budget total:', error);
+      return { subtotal: 0, serviceFee: 0, total: 0 };
     }
-
-    // Add OPME costs
-    if (budget.opme_quotes && Array.isArray(budget.opme_quotes)) {
-      budget.opme_quotes.forEach((quote: any) => {
-        const selectedQuote = quote.quotes?.find((q: any) => q.supplier_id === quote.selected_supplier_id);
-        if (selectedQuote) {
-          subtotal += selectedQuote.price || 0;
-        }
-      });
-    }
-
-    const serviceFee = subtotal * 0.05; // 5% service fee
-    const total = subtotal + serviceFee;
-
-    return { subtotal, serviceFee, total };
   };
 
   const formatCurrency = (value: number) => {
