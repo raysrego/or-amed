@@ -20,6 +20,7 @@ import UserProfile from './pages/UserProfile';
 import UserSurgeryRequest from './pages/UserSurgeryRequest';
 import UserBudgetTracking from './pages/UserBudgetTracking';
 import UserManagement from './pages/UserManagement';
+import Budgets from './pages/Budgets';
 
 function App() {
   return (
@@ -95,10 +96,9 @@ function App() {
                         </ProtectedRoute>
                       } />
                       <Route path="/budgets" element={
-                        <div className="p-8">
-                          <h1 className="text-3xl font-bold text-gray-900">Orçamentos</h1>
-                          <p className="text-gray-600 mt-2">Módulo em desenvolvimento</p>
-                        </div>
+                        <ProtectedRoute adminOnly>
+                          <Budgets />
+                        </ProtectedRoute>
                       } />
                       <Route path="/audit-logs" element={
                         <div className="p-8">
