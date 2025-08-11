@@ -18,7 +18,7 @@ export function useUserProfile() {
     try {
       // Para o admin rayannyrego@gmail.com, criar perfil se não existir
       if (user?.email === 'rayannyrego@gmail.com') {
-        const { data: existingProfile, error: fetchError } = await supabase
+        const { data: existingProfile } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('email', 'rayannyrego@gmail.com')
@@ -26,7 +26,7 @@ export function useUserProfile() {
 
         if (!existingProfile) {
           // Criar perfil admin
-          const { data: newProfile, error: insertError } = await supabase
+          const { data: newProfile } = await supabase
             .from('user_profiles')
             .insert({
               user_id: user.id,
@@ -38,14 +38,13 @@ export function useUserProfile() {
             .select()
             .single();
 
-          if (!insertError && newProfile) {
+          if (newProfile) {
             setProfile(newProfile);
-            setLoading(false);
             return;
           }
         } else if (existingProfile && (!existingProfile.is_admin || existingProfile.role !== 'admin')) {
           // Atualizar perfil existente para admin
-          const { data: updatedProfile, error: updateError } = await supabase
+          const { data: updatedProfile } = await supabase
             .from('user_profiles')
             .update({
               role: 'admin',
@@ -56,12 +55,19 @@ export function useUserProfile() {
             .select()
             .single();
 
-          if (!updateError && updatedProfile) {
+          if (updatedProfile) {
             setProfile(updatedProfile);
-            setLoading(false);
             return;
           }
+        } else {
+          setProfile(existingProfile);
+          return;
         }
+      }
+
+      if (!user?.id) {
+        setProfile(null);
+        return;
       }
 
       const result = await supabase
@@ -71,7 +77,7 @@ export function useUserProfile() {
         .single();
 
       if (result.error && result.error.code !== 'PGRST116') {
-        throw result.error;
+        console.warn('Profile fetch error:', result.error.message);
       }
 
       if (result.data) {
@@ -89,7 +95,7 @@ export function useUserProfile() {
         } as UserProfile);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.warn('Error fetching profile:', error);
       // Fallback para admin em caso de erro
       if (user?.email === 'rayannyrego@gmail.com') {
         setProfile({

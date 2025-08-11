@@ -32,6 +32,11 @@ export default function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
+  // Always allow access for the main admin email
+  if (user?.email === 'rayannyrego@gmail.com') {
+    return <>{children}</>;
+  }
+
   // Check access permissions
   if (profile) {
     // Admin can access everything
@@ -66,10 +71,19 @@ export default function ProtectedRoute({
     return <>{children}</>;
   }
   
-  // Fallback especial para rayannyrego@gmail.com
-  if (user?.email === 'rayannyrego@gmail.com') {
-    return <>{children}</>;
-  }
-  
-  return <>{children}</>;
+  // If no profile found, show loading or redirect to profile setup
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Configuração Necessária</h2>
+        <p className="text-gray-600 mb-4">Complete seu perfil para continuar.</p>
+        <button
+          onClick={() => window.location.href = '/user-profile'}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+        >
+          Configurar Perfil
+        </button>
+      </div>
+    </div>
+  );
 }

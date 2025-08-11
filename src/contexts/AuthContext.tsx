@@ -28,22 +28,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
-          // Don't throw error on initial load, just log it
-          console.warn('Session error (will retry):', error.message);
+          console.warn('Session error (will continue):', error.message);
         }
         
         if (mounted) {
           console.log('Initial session:', session?.user?.email || 'No session');
           setSession(session);
           setUser(session?.user ?? null);
-          setLoading(false);
         }
       } catch (error) {
-        console.error('Error in getSession:', error);
+        console.warn('Error in getSession (will continue):', error);
         if (mounted) {
           setSession(null);
           setUser(null);
+        }
+      } finally {
+        if (mounted) {
           setLoading(false);
         }
       }
