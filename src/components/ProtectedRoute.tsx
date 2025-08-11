@@ -17,12 +17,44 @@ export default function ProtectedRoute({
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile();
 
+  // Add error boundary for this component
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleError = (error: any) => {
+      console.error('❌ ProtectedRoute error:', error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Erro na Aplicação</h2>
+          <p className="text-gray-600 mb-4">Ocorreu um erro. Tente recarregar a página.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            Recarregar
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando...</p>
+          <p className="text-xs text-gray-500 mt-2">
+            Auth: {loading ? 'Loading...' : 'Ready'} | Profile: {profileLoading ? 'Loading...' : 'Ready'}
+          </p>
         </div>
       </div>
     );

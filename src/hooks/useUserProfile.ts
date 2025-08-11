@@ -15,9 +15,17 @@ export function useUserProfile() {
   }, [user]);
 
   const fetchProfile = async () => {
+    if (!user?.id) {
+      console.log('No user ID available for profile fetch');
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       // Para o admin rayannyrego@gmail.com, criar perfil se não existir
       if (user?.email === 'rayannyrego@gmail.com') {
+        console.log('Handling admin user profile...');
         const { data: existingProfile } = await supabase
           .from('user_profiles')
           .select('*')
@@ -25,6 +33,7 @@ export function useUserProfile() {
           .single();
 
         if (!existingProfile) {
+          console.log('Creating admin profile...');
           // Criar perfil admin
           const { data: newProfile } = await supabase
             .from('user_profiles')
@@ -39,10 +48,12 @@ export function useUserProfile() {
             .single();
 
           if (newProfile) {
+            console.log('Admin profile created successfully');
             setProfile(newProfile);
             return;
           }
         } else if (existingProfile && (!existingProfile.is_admin || existingProfile.role !== 'admin')) {
+          console.log('Updating existing profile to admin...');
           // Atualizar perfil existente para admin
           const { data: updatedProfile } = await supabase
             .from('user_profiles')
@@ -56,19 +67,18 @@ export function useUserProfile() {
             .single();
 
           if (updatedProfile) {
+            console.log('Admin profile updated successfully');
             setProfile(updatedProfile);
             return;
           }
         } else {
+          console.log('Using existing admin profile');
           setProfile(existingProfile);
           return;
         }
       }
 
-      if (!user?.id) {
-        setProfile(null);
-        return;
-      }
+      console.log('Fetching regular user profile for:', user.email);
 
       const result = await supabase
         .from('user_profiles')
@@ -77,12 +87,14 @@ export function useUserProfile() {
         .single();
 
       if (result.error && result.error.code !== 'PGRST116') {
-        console.warn('Profile fetch error:', result.error.message);
+        console.error('❌ Profile fetch error:', result.error.message);
       }
 
       if (result.data) {
+        console.log('Profile loaded successfully for:', result.data.name);
         setProfile(result.data);
       } else if (user?.email === 'rayannyrego@gmail.com') {
+        console.log('Using fallback admin profile');
         // Fallback para admin
         setProfile({
           id: 'admin-temp',
@@ -93,11 +105,14 @@ export function useUserProfile() {
           email: 'rayannyrego@gmail.com',
           created_at: new Date().toISOString(),
         } as UserProfile);
+      } else {
+        console.log('No profile found for user:', user.email);
       }
     } catch (error) {
-      console.warn('Error fetching profile:', error);
+      console.error('❌ Error fetching profile:', error);
       // Fallback para admin em caso de erro
       if (user?.email === 'rayannyrego@gmail.com') {
+        console.log('Using error fallback admin profile');
         setProfile({
           id: 'admin-fallback',
           user_id: user.id,

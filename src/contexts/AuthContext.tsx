@@ -28,7 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.warn('Session error (will continue):', error.message);
+          console.error('❌ Session error:', error.message);
+          // Don't throw, just log and continue
         }
         
         if (mounted) {
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null);
         }
       } catch (error) {
-        console.warn('Error in getSession (will continue):', error);
+        console.error('❌ Error in getSession:', error);
         if (mounted) {
           setSession(null);
           setUser(null);
@@ -76,6 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (event === 'SIGNED_IN') {
         console.log('User signed in successfully');
+      }
+      
+      if (event === 'SIGNED_IN_ERROR') {
+        console.error('❌ Sign in error:', session);
       }
     });
 

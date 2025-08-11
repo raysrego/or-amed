@@ -3,15 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Supabase environment variables not found');
-  console.warn('The app will use fallback configuration');
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey || 
+    supabaseUrl === 'https://placeholder.supabase.co' || 
+    supabaseAnonKey === 'placeholder-key') {
+  console.error('❌ Supabase environment variables missing or invalid');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl);
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
 }
 
 // Create Supabase client with fallback values to prevent crashes
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
+  supabaseUrl,
+  supabaseAnonKey,
   {
   auth: {
     autoRefreshToken: true,
@@ -24,7 +28,7 @@ export const supabase = createClient(
   global: {
     headers: {
       'X-Client-Info': 'cirplane-web',
-      'apikey': supabaseAnonKey || 'placeholder-key'
+      'apikey': supabaseAnonKey
     }
   },
   db: {
@@ -37,6 +41,22 @@ export const supabase = createClient(
   }
 });
 
+// Test connection on initialization
+const testConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('user_profiles').select('count').limit(1);
+    if (error) {
+      console.error('❌ Supabase connection failed:', error.message);
+    } else {
+      console.log('✅ Supabase connection successful');
+    }
+  } catch (error) {
+    console.error('❌ Supabase connection error:', error);
+  }
+};
+
+// Test connection after a short delay
+setTimeout(testConnection, 1000);
 // Database types
 export interface Patient {
   id: string;
