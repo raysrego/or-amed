@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Calculator, Eye, Printer, Building2, User, FileText } from 'lucide-react';
-import { supabase, Budget, SurgeryRequest, Hospital, Supplier } from '../lib/supabase';
+import { supabase, Budget, SurgeryRequest, Hospital, Supplier, OPME } from '../lib/supabase';
 
 interface OPMEQuote {
   opme_id: string;
   opme_name: string;
+  quantity: number;
   quotes: {
     supplier_id: string;
     supplier_name: string;
@@ -18,6 +19,7 @@ export default function Budgets() {
   const [surgeryRequests, setSurgeryRequests] = useState<SurgeryRequest[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [opmes, setOpmes] = useState<OPME[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -44,7 +46,7 @@ export default function Budgets() {
 
   const fetchData = async () => {
     try {
-      const [budgetsResult, requestsResult, hospitalsResult, suppliersResult] = await Promise.all([
+      const [budgetsResult, requestsResult, hospitalsResult, suppliersResult, opmesResult] = await Promise.all([
         supabase
           .from('budgets')
           .select(`
@@ -66,18 +68,21 @@ export default function Budgets() {
           `)
           .order('created_at', { ascending: false }),
         supabase.from('hospitals').select('*').order('name'),
-        supabase.from('suppliers').select('*').order('name')
+        supabase.from('suppliers').select('*').order('name'),
+        supabase.from('opmes').select('*').order('name')
       ]);
 
       if (budgetsResult.error) throw budgetsResult.error;
       if (requestsResult.error) throw requestsResult.error;
       if (hospitalsResult.error) throw hospitalsResult.error;
       if (suppliersResult.error) throw suppliersResult.error;
+      if (opmesResult.error) throw opmesResult.error;
 
       setBudgets(budgetsResult.data || []);
       setSurgeryRequests(requestsResult.data || []);
       setHospitals(hospitalsResult.data || []);
       setSuppliers(suppliersResult.data || []);
+      setOpmes(opmesResult.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -89,18 +94,25 @@ export default function Budgets() {
     const request = surgeryRequests.find(r => r.id === requestId);
     setSelectedRequest(request || null);
     setFormData({ ...formData, surgery_request_id: requestId });
-    
-    if (request && request.opme_requests) {
-      const quotes: OPMEQuote[] = request.opme_requests.map((opme: any) => ({
-        opme_id: opme.opme_id,
-        opme_name: opme.opme_name || 'Material OPME',
-        quotes: suppliers.slice(0, 3).map(supplier => ({
-          supplier_id: supplier.id,
-          supplier_name: supplier.name,
-          price: 0
-        }))
-      }));
+
+    if (request && request.opme_requests && Array.isArray(request.opme_requests)) {
+      const quotes: OPMEQuote[] = request.opme_requests.map((opmeReq: any) => {
+        const opme = opmes.find(o => o.id === opmeReq.opme_id);
+        return {
+          opme_id: opmeReq.opme_id,
+          opme_name: opme ? opme.name : opmeReq.description || 'Material OPME',
+          quantity: opmeReq.quantity || 1,
+          quotes: suppliers.map(supplier => ({
+            supplier_id: supplier.id,
+            supplier_name: supplier.name,
+            price: 0
+          })),
+          selected_supplier_id: undefined
+        };
+      });
       setOpmeQuotes(quotes);
+    } else {
+      setOpmeQuotes([]);
     }
   };
 
@@ -140,7 +152,7 @@ export default function Budgets() {
       if (opme.selected_supplier_id) {
         const selectedQuote = opme.quotes.find(q => q.supplier_id === opme.selected_supplier_id);
         if (selectedQuote) {
-          total += selectedQuote.price;
+          total += selectedQuote.price * opme.quantity;
         }
       }
     });
@@ -234,6 +246,20 @@ export default function Budgets() {
               <div class="item"><span class="label">Honorário Médico:</span> R$ ${budget.doctor_fee.toFixed(2)}</div>
               ${budget.anesthetist_fee ? `<div class="item"><span class="label">Anestesista:</span> R$ ${budget.anesthetist_fee.toFixed(2)}</div>` : ''}
               ${request.evoked_potential && budget.evoked_potential_fee ? `<div class="item"><span class="label">Potencial Evocado:</span> R$ ${budget.evoked_potential_fee.toFixed(2)}</div>` : ''}
+              ${budget.opme_quotes && budget.opme_quotes.length > 0 ? `
+                <div class="section">
+                  <h3>Materiais OPME</h3>
+                  ${budget.opme_quotes.map((opme: any) => {
+                    const selectedQuote = opme.quotes?.find((q: any) => q.supplier_id === opme.selected_supplier_id);
+                    if (selectedQuote) {
+                      const quantity = opme.quantity || 1;
+                      const totalPrice = (selectedQuote.price || 0) * quantity;
+                      return `<div class="item"><span class="label">${opme.opme_name}:</span> ${quantity} unidade(s) × R$ ${selectedQuote.price.toFixed(2)} = R$ ${totalPrice.toFixed(2)}</div>`;
+                    }
+                    return '';
+                  }).join('')}
+                </div>
+              ` : ''}
               <div class="item"><span class="label">Subtotal:</span> R$ ${subtotal.toFixed(2)}</div>
               <div class="item"><span class="label">Taxa de Serviço (2%):</span> R$ ${serviceFee.toFixed(2)}</div>
             </div>
@@ -284,7 +310,8 @@ export default function Budgets() {
       budget.opme_quotes.forEach((opme: any) => {
         const selectedQuote = opme.quotes?.find((q: any) => q.supplier_id === opme.selected_supplier_id);
         if (selectedQuote) {
-          subtotal += selectedQuote.price || 0;
+          const quantity = opme.quantity || 1;
+          subtotal += (selectedQuote.price || 0) * quantity;
         }
       });
     }
@@ -682,7 +709,9 @@ export default function Budgets() {
                     <div className="space-y-4">
                       {opmeQuotes.map((opme, opmeIndex) => (
                         <div key={opme.opme_id} className="border border-gray-200 rounded-lg p-4">
-                          <h4 className="font-medium text-gray-900 mb-3">{opme.opme_name}</h4>
+                          <h4 className="font-medium text-gray-900 mb-3">
+                            {opme.opme_name} <span className="text-gray-600 text-sm">(Quantidade: {opme.quantity})</span>
+                          </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {opme.quotes.map((quote, quoteIndex) => (
                               <div key={quote.supplier_id} className="border border-gray-100 rounded p-3">

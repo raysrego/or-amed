@@ -162,7 +162,9 @@ export default function UserBudgetTracking() {
               ${budget.opme_quotes.map((opmeQuote: any) => {
                 const selectedQuote = opmeQuote.quotes?.find((q: any) => q.supplier_id === opmeQuote.selected_supplier_id);
                 if (!selectedQuote) return '';
-                return `<div class="item"><span class="label">${opmeQuote.opme_name || 'Material OPME'}:</span> 1 unidade × ${formatCurrency(selectedQuote.price || 0)} = ${formatCurrency(selectedQuote.price || 0)}</div>`;
+                const quantity = opmeQuote.quantity || 1;
+                const totalPrice = (selectedQuote.price || 0) * quantity;
+                return `<div class="item"><span class="label">${opmeQuote.opme_name || 'Material OPME'}:</span> ${quantity} unidade(s) × ${formatCurrency(selectedQuote.price || 0)} = ${formatCurrency(totalPrice)}</div>`;
               }).join('')}
             ` : ''}
             
