@@ -1,20 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Calculator, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Orcamento, Paciente, Medico, Hospital } from '../types/database';
+import { Budget, Hospital } from '../lib/supabase';
 import { useForm } from 'react-hook-form';
 
-export default function Orcamentos() {
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [medicos, setMedicos] = useState<Medico[]>([]);
-  const [hospitais, setHospitais] = useState<Hospital[]>([]);
+interface SurgeryRequest {
+  id: string;
+  patient_id: string;
+  doctor_id: string;
+}
+
+interface BudgetForm {
+  surgery_request_id: string;
+  hospital_id: string;
+  doctor_fee: number;
+  icu_daily_cost?: number;
+  ward_daily_cost?: number;
+  room_daily_cost?: number;
+  anesthetist_fee?: number;
+  evoked_potential_fee?: number;
+  total_cost?: number;
+  status: string;
+  observations?: string;
+}
+
+export default function Budgets() {
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [surgeryRequests, setSurgeryRequests] = useState<SurgeryRequest[]>([]);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingOrcamento, setEditingOrcamento] = useState<Orcamento | null>(null);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Orcamento>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<BudgetForm>();
 
   useEffect(() => {
     loadData();
@@ -23,31 +42,31 @@ export default function Orcamentos() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      const [orcamentosResult, pacientesResult, medicosResult, hospitaisResult] = await Promise.all([
+
+      const [budgetsResult, surgeryRequestsResult, hospitalsResult] = await Promise.all([
         supabase
-          .from('orcamentos')
+          .from('budgets')
           .select(`
             *,
-            paciente:pacientes(nome),
-            medico:medicos(nome),
-            hospital:hospitais(nome)
+            surgery_request:surgery_requests(
+              id,
+              patient:patients(name),
+              doctor:doctors(name)
+            ),
+            hospital:hospitals(name)
           `)
           .order('created_at', { ascending: false }),
-        supabase.from('pacientes').select('*').order('nome'),
-        supabase.from('medicos').select('*').order('nome'),
-        supabase.from('hospitais').select('*').order('nome')
+        supabase.from('surgery_requests').select('*'),
+        supabase.from('hospitals').select('*').order('name')
       ]);
 
-      if (orcamentosResult.error) throw orcamentosResult.error;
-      if (pacientesResult.error) throw pacientesResult.error;
-      if (medicosResult.error) throw medicosResult.error;
-      if (hospitaisResult.error) throw hospitaisResult.error;
+      if (budgetsResult.error) throw budgetsResult.error;
+      if (surgeryRequestsResult.error) throw surgeryRequestsResult.error;
+      if (hospitalsResult.error) throw hospitalsResult.error;
 
-      setOrcamentos(orcamentosResult.data || []);
-      setPacientes(pacientesResult.data || []);
-      setMedicos(medicosResult.data || []);
-      setHospitais(hospitaisResult.data || []);
+      setBudgets(budgetsResult.data || []);
+      setSurgeryRequests(surgeryRequestsResult.data || []);
+      setHospitals(hospitalsResult.data || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -57,38 +76,48 @@ export default function Orcamentos() {
 
   const onSubmit = async (data: any) => {
     try {
-      const orcamentoData = {
-        ...data,
-        valor_total: data.valor_total ? parseFloat(data.valor_total) : null,
+      const budgetData = {
+        surgery_request_id: data.surgery_request_id,
+        hospital_id: data.hospital_id,
+        doctor_fee: data.doctor_fee ? parseFloat(data.doctor_fee) : 0,
+        icu_daily_cost: data.icu_daily_cost ? parseFloat(data.icu_daily_cost) : null,
+        ward_daily_cost: data.ward_daily_cost ? parseFloat(data.ward_daily_cost) : null,
+        room_daily_cost: data.room_daily_cost ? parseFloat(data.room_daily_cost) : null,
+        anesthetist_fee: data.anesthetist_fee ? parseFloat(data.anesthetist_fee) : null,
+        evoked_potential_fee: data.evoked_potential_fee ? parseFloat(data.evoked_potential_fee) : null,
+        total_cost: data.total_cost ? parseFloat(data.total_cost) : null,
+        status: data.status,
+        observations: data.observations,
+        opme_quotes: {}
       };
 
-      if (editingOrcamento) {
+      if (editingBudget) {
         const { error } = await supabase
-          .from('orcamentos')
-          .update(orcamentoData)
-          .eq('id', editingOrcamento.id);
+          .from('budgets')
+          .update(budgetData)
+          .eq('id', editingBudget.id);
 
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('orcamentos')
-          .insert([orcamentoData]);
+          .from('budgets')
+          .insert([budgetData]);
 
         if (error) throw error;
       }
 
       await loadData();
       setShowForm(false);
-      setEditingOrcamento(null);
+      setEditingBudget(null);
       reset();
     } catch (error) {
       console.error('Erro ao salvar orçamento:', error);
     }
   };
 
-  const handleEdit = (orcamento: Orcamento) => {
-    setEditingOrcamento(orcamento);
-    reset(orcamento);
+  const handleEdit = (budget: Budget) => {
+    setEditingBudget(budget);
+    reset(budget as any);
     setShowForm(true);
   };
 
@@ -97,7 +126,7 @@ export default function Orcamentos() {
 
     try {
       const { error } = await supabase
-        .from('orcamentos')
+        .from('budgets')
         .delete()
         .eq('id', id);
 
@@ -110,14 +139,16 @@ export default function Orcamentos() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'aguardando':
+      case 'AWAITING_QUOTE':
         return 'bg-yellow-100 text-yellow-800';
-      case 'aprovado':
-        return 'bg-green-100 text-green-800';
-      case 'recusado':
-        return 'bg-red-100 text-red-800';
-      case 'pago':
+      case 'AWAITING_PATIENT':
+        return 'bg-orange-100 text-orange-800';
+      case 'AWAITING_PAYMENT':
         return 'bg-blue-100 text-blue-800';
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELED':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -125,14 +156,16 @@ export default function Orcamentos() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'aguardando':
-        return 'Aguardando';
-      case 'aprovado':
+      case 'AWAITING_QUOTE':
+        return 'Aguardando Cotação';
+      case 'AWAITING_PATIENT':
+        return 'Aguardando Paciente';
+      case 'AWAITING_PAYMENT':
+        return 'Aguardando Pagamento';
+      case 'APPROVED':
         return 'Aprovado';
-      case 'recusado':
-        return 'Recusado';
-      case 'pago':
-        return 'Pago';
+      case 'CANCELED':
+        return 'Cancelado';
       default:
         return status;
     }
@@ -149,10 +182,11 @@ export default function Orcamentos() {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const filteredOrcamentos = orcamentos.filter(orcamento =>
-    orcamento.paciente?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    orcamento.medico?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    orcamento.status.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBudgets = budgets.filter(budget =>
+    budget.surgery_request?.patient?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    budget.surgery_request?.doctor?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    budget.hospital?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getStatusLabel(budget.status).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -174,7 +208,7 @@ export default function Orcamentos() {
         <button
           onClick={() => {
             setShowForm(true);
-            setEditingOrcamento(null);
+            setEditingBudget(null);
             reset();
           }}
           className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -201,39 +235,22 @@ export default function Orcamentos() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
-              {editingOrcamento ? 'Editar Orçamento' : 'Novo Orçamento'}
+              {editingBudget ? 'Editar Orçamento' : 'Novo Orçamento'}
             </h2>
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Paciente
+                  Solicitação de Cirurgia
                 </label>
                 <select
-                  {...register('paciente_id')}
+                  {...register('surgery_request_id', { required: true })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Selecione um paciente</option>
-                  {pacientes.map((paciente) => (
-                    <option key={paciente.id} value={paciente.id}>
-                      {paciente.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Médico
-                </label>
-                <select
-                  {...register('medico_id')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Selecione um médico</option>
-                  {medicos.map((medico) => (
-                    <option key={medico.id} value={medico.id}>
-                      {medico.nome} - {medico.crm}
+                  <option value="">Selecione uma solicitação</option>
+                  {surgeryRequests.map((request) => (
+                    <option key={request.id} value={request.id}>
+                      Solicitação {request.id.substring(0, 8)}
                     </option>
                   ))}
                 </select>
@@ -244,13 +261,13 @@ export default function Orcamentos() {
                   Hospital
                 </label>
                 <select
-                  {...register('hospital_id')}
+                  {...register('hospital_id', { required: true })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Selecione um hospital</option>
-                  {hospitais.map((hospital) => (
+                  {hospitals.map((hospital) => (
                     <option key={hospital.id} value={hospital.id}>
-                      {hospital.nome}
+                      {hospital.name}
                     </option>
                   ))}
                 </select>
@@ -261,35 +278,97 @@ export default function Orcamentos() {
                   Status
                 </label>
                 <select
-                  {...register('status')}
+                  {...register('status', { required: true })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="aguardando">Aguardando</option>
-                  <option value="aprovado">Aprovado</option>
-                  <option value="recusado">Recusado</option>
-                  <option value="pago">Pago</option>
+                  <option value="AWAITING_QUOTE">Aguardando Cotação</option>
+                  <option value="AWAITING_PATIENT">Aguardando Paciente</option>
+                  <option value="AWAITING_PAYMENT">Aguardando Pagamento</option>
+                  <option value="APPROVED">Aprovado</option>
+                  <option value="CANCELED">Cancelado</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Valor Total
+                  Honorário Médico
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  {...register('valor_total')}
+                  {...register('doctor_fee', { required: true })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Forma de Pagamento
+                  Custo UTI (Diária)
                 </label>
                 <input
-                  type="text"
-                  {...register('forma_pagamento')}
+                  type="number"
+                  step="0.01"
+                  {...register('icu_daily_cost')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Custo Enfermaria (Diária)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('ward_daily_cost')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Custo Apartamento (Diária)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('room_daily_cost')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Honorário Anestesista
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('anesthetist_fee')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Taxa Potencial Evocado
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('evoked_potential_fee')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Custo Total
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('total_cost')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -299,7 +378,7 @@ export default function Orcamentos() {
                   Observações
                 </label>
                 <textarea
-                  {...register('observacoes')}
+                  {...register('observations')}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -310,13 +389,13 @@ export default function Orcamentos() {
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {editingOrcamento ? 'Atualizar' : 'Criar'}
+                  {editingBudget ? 'Atualizar' : 'Criar'}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowForm(false);
-                    setEditingOrcamento(null);
+                    setEditingBudget(null);
                     reset();
                   }}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
@@ -348,7 +427,7 @@ export default function Orcamentos() {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Valor Total
+                  Custo Total
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Data
@@ -359,39 +438,39 @@ export default function Orcamentos() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOrcamentos.map((orcamento) => (
-                <tr key={orcamento.id} className="hover:bg-gray-50">
+              {filteredBudgets.map((budget) => (
+                <tr key={budget.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">
-                      {orcamento.paciente?.nome || '-'}
+                      {budget.surgery_request?.patient?.name || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {orcamento.medico?.nome || '-'}
+                    {budget.surgery_request?.doctor?.name || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {orcamento.hospital?.nome || '-'}
+                    {budget.hospital?.name || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(orcamento.status)}`}>
-                      {getStatusLabel(orcamento.status)}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(budget.status)}`}>
+                      {getStatusLabel(budget.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {orcamento.valor_total ? formatCurrency(orcamento.valor_total) : '-'}
+                    {budget.total_cost ? formatCurrency(Number(budget.total_cost)) : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {formatDate(orcamento.data)}
+                    {formatDate(budget.created_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => handleEdit(orcamento)}
+                      onClick={() => handleEdit(budget)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(orcamento.id)}
+                      onClick={() => handleDelete(budget.id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -403,7 +482,7 @@ export default function Orcamentos() {
           </table>
         </div>
 
-        {filteredOrcamentos.length === 0 && (
+        {filteredBudgets.length === 0 && (
           <div className="text-center py-12">
             <Calculator className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum orçamento encontrado</h3>
