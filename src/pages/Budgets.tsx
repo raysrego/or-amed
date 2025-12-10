@@ -293,6 +293,46 @@ export default function Budgets() {
     return { subtotal, serviceFee, total: subtotal + serviceFee };
   };
 
+  const handleEdit = (budget: Budget) => {
+    setEditingBudget(budget);
+    const request = budget.surgery_request;
+
+    setFormData({
+      surgery_request_id: budget.surgery_request_id || '',
+      hospital_id: budget.hospital_id || '',
+      icu_daily_cost: budget.icu_daily_cost?.toString() || '',
+      ward_daily_cost: budget.ward_daily_cost?.toString() || '',
+      room_daily_cost: budget.room_daily_cost?.toString() || '',
+      anesthetist_fee: budget.anesthetist_fee?.toString() || '',
+      evoked_potential_fee: budget.evoked_potential_fee?.toString() || '',
+      status: budget.status,
+    });
+
+    setSelectedRequest(request || null);
+
+    if (budget.opme_quotes && Array.isArray(budget.opme_quotes)) {
+      setOpmeQuotes(budget.opme_quotes);
+    }
+
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('budgets')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchData();
+    } catch (error: any) {
+      alert('Erro ao excluir orçamento: ' + error.message);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       surgery_request_id: '',
